@@ -5,13 +5,20 @@ import type { HeaderArray, User, UserFilter, UserSortCriteria } from './types';
 
 // Define the headers for the user data table
 export const userDefaultHeaders = writable<HeaderArray>([
-    'Region Name',
-    'Inspector Name',
-    'Role',
-    'Total Dispatch Tasks',
-    'Total Ongoing Tasks',
-    'Total Completed Tasks',
-    'Total Tasks'
+    // 'Region Name',
+	'Inspector Name',
+	'Role',
+	'Mon',
+	'Tue',
+	'Wed',
+	'Thu',
+	'Fri',
+	'Sat',
+	'Sun',
+	'Total Dispatch Tasks',
+	// 'Total Ongoing Tasks',
+	'Total Completed Tasks',
+	'Total Tasks'
 ]);
 
 export const userOptionalHeaders = writable<HeaderArray>([
