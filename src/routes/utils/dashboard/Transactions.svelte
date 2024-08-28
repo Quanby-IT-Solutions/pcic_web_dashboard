@@ -772,7 +772,7 @@
 		<Button color="blue" on:click={handlePreviousPage} disabled={currentPage === 1}>
 			Previous
 		</Button>
-		<span>Page {currentPage} of {Math.ceil(inspectors.length / itemsPerPage)}</span>
+		<span class="text-gray-400">Page {currentPage} of {Math.ceil(inspectors.length / itemsPerPage)}</span>
 		<Button
 			color="blue"
 			on:click={handleNextPage}
