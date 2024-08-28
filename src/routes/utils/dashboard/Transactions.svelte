@@ -710,63 +710,64 @@
 			{:else if selectedTable === 'tasks'}
 				<TaskTable />
 			{:else if selectedTable === 'users'}
-				<Table hoverable={true}>
-					<TableHead class="border-b border-gray-300 bg-gray-50 dark:border-gray-700">
-						{#each userActiveHeaders as header}
-							<TableHeadCell
-								class="whitespace-nowrap px-6 py-3 {header === 'Inspector Name' ||
-								header === 'Mobile Number'
-									? 'text-left'
-									: 'text-center'} font-medium text-gray-700 dark:text-gray-300"
-							>
-								{header}
-							</TableHeadCell>
-						{/each}
-					</TableHead>
-					<TableBody>
-						{#if paginatedInspectors.length > 0}
-							{#each paginatedInspectors as inspector}
-								<TableBodyRow
-									on:click={() => handleRowClick(inspector.id)}
-									class="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
-								>
-									{#each userActiveHeaders as header}
-										<TableBodyCell
-											class="px-6 py-4 {header === 'Inspector Name' || header === 'Mobile Number'
-												? 'text-left'
-												: 'text-center'}"
-										>
-											{#if header === 'Online'}
-												<span class="flex items-center justify-center">
-													<span
-														class={`h-3 w-3 rounded-full ${
-															inspector.online ? 'bg-green-500' : 'bg-gray-500'
-														} mr-2`}
-													></span>
-													<span
-														class={`text-sm font-semibold ${
-															inspector.online ? 'text-green-600' : 'text-gray-500'
-														}`}
-													>
-														{inspector.online ? 'Online' : 'Offline'}
-													</span>
-												</span>
-											{:else}
-												{mapInspectorData(inspector, userActiveHeaders)[header]}
-											{/if}
-										</TableBodyCell>
-									{/each}
-								</TableBodyRow>
-							{/each}
-						{:else}
-							<TableBodyRow>
-								<TableBodyCell colspan={userActiveHeaders.length} class="text-center">
-									No inspectors found.
-								</TableBodyCell>
-							</TableBodyRow>
-						{/if}
-					</TableBody>
-				</Table>
+				
+<Table hoverable={true}>
+	<TableHead class="border-b border-gray-300 bg-gray-50 dark:border-gray-700">
+	  {#each userActiveHeaders as header}
+		<TableHeadCell
+		  class="whitespace-nowrap px-6 py-3 {header === 'Inspector Name' ||
+		  header === 'Mobile Number'
+			? 'text-left'
+			: 'text-center'} font-medium text-gray-900 dark:text-white"
+		>
+		  {header}
+		</TableHeadCell>
+	  {/each}
+	</TableHead>
+	<TableBody>
+	  {#if paginatedInspectors.length > 0}
+		{#each paginatedInspectors as inspector}
+		  <TableBodyRow
+			on:click={() => handleRowClick(inspector.id)}
+			class="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+		  >
+			{#each userActiveHeaders as header}
+			  <TableBodyCell
+				class="px-6 py-4 {header === 'Inspector Name' || header === 'Mobile Number'
+				  ? 'text-left'
+				  : 'text-center'} text-base text-gray-900 dark:text-gray-300"
+			  >
+				{#if header === 'Online'}
+				  <span class="flex items-center justify-center">
+					<span
+					  class={`h-3 w-3 rounded-full ${
+						inspector.online ? 'bg-green-500' : 'bg-gray-500'
+					  } mr-2`}
+					></span>
+					<span
+					  class={`text-sm font-semibold ${
+						inspector.online ? 'text-green-600' : 'text-gray-500'
+					  }`}
+					>
+					  {inspector.online ? 'Online' : 'Offline'}
+					</span>
+				  </span>
+				{:else}
+				  {mapInspectorData(inspector, userActiveHeaders)[header]}
+				{/if}
+			  </TableBodyCell>
+			{/each}
+		  </TableBodyRow>
+		{/each}
+	  {:else}
+		<TableBodyRow>
+		  <TableBodyCell colspan={userActiveHeaders.length} class="text-center text-base text-gray-500 dark:text-gray-400">
+			No inspectors found.
+		  </TableBodyCell>
+		</TableBodyRow>
+	  {/if}
+	</TableBody>
+  </Table>
 			{:else if selectedTable === 'regions'}
 				<RegionTable />
 			{/if}

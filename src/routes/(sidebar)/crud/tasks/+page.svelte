@@ -597,313 +597,323 @@
 	let scannedFiles: any = {};
 
 	async function scanFTP() {
-		isScanning = true;
-		try {
-			const directory = '/Work';
-			// Connect to the SFTP server
-			const fetched_list = await fetch('/api/list-directory', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					directory: `${directory}`
-				})
-			});
+    isScanning = true;
+    showToast('Starting FTP server scan...', 'info');
+    try {
+        const directory = '/Work';
+        const fetched_list = await fetch('/api/list-directory', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ directory })
+        });
 
-			if (!fetched_list.ok) {
-				console.error('Error fetching files:', fetched_list.statusText);
-				return;
-			}
+        if (!fetched_list.ok) {
+            throw new Error(`Error fetching files: ${fetched_list.statusText}`);
+        }
 
-			// List files in the remote directory
-			const fileList = await fetched_list.json();
-			// Iterate over each file
-			for (const file of fileList) {
-				if (file.name.endsWith('.csv')) {
-					// Check if the file is a CSV
-					console.log(`Processing file: ${file.name}`);
-					scannedFiles[file.name] = {
-						rows: [],
-						synced: [],
-						scanning: true
-					};
-					const fetched_file = await fetch('/api/get-file', {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json'
-						},
-						body: JSON.stringify({
-							filePath: `${directory}/${file.name}`
-						})
-					});
-					if (!fetched_file.ok) {
-						console.error('Error fetching file:', fetched_file.statusText);
-						continue;
-					}
-					// Download the CSV file
-					const csvData = await fetched_file.text();
+        const fileList = await fetched_list.json();
+        let totalFiles = 0;
+        let processedFiles = 0;
 
-					// Parse the CSV data
-					const parsedData = Papa.parse(csvData, {
-						header: true,
-						skipEmptyLines: true
-					});
-					scannedFiles[file.name]['length'] = (parsedData.data as any[]).length;
+        for (const file of fileList) {
+            if (file.name.endsWith('.csv')) {
+                totalFiles++;
+                try {
+                    showToast(`Processing file: ${file.name}`, 'info');
+                    scannedFiles[file.name] = {
+                        rows: [],
+                        synced: [],
+                        scanning: true,
+                        length: 0
+                    };
 
-					// Iterate over each row in the CSV file
-					for (const row of parsedData.data as any[]) {
-						const ppirInsuranceId = row['ppir_insuranceid']; // Replace with your actual column name
+                    const fetched_file = await fetch('/api/get-file', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ filePath: `${directory}/${file.name}` })
+                    });
 
-						// Check if the row already exists in the ppir_forms table
-						const { data: existingRow, error: selectError } = await supabase
-							.from('ppir_forms')
-							.select('ppir_insuranceid')
-							.eq('ppir_insuranceid', ppirInsuranceId)
-							.single();
+                    if (!fetched_file.ok) {
+                        throw new Error(`Error fetching file ${file.name}: ${fetched_file.statusText}`);
+                    }
 
-						if (selectError && selectError.code !== 'PGRST116') {
-							console.error(
-								`Error checking existence of ${ppirInsuranceId} in ppir_forms:`,
-								selectError
-							);
-							showToast('System Error: Error checking existence of ppir_form', 'error');
-							scannedFiles[file.name]['rows'] = [row, ...(scannedFiles[file.name]['rows'] ?? [])];
-							continue; // Skip to the next row if there's an error
-						}
+                    const csvData = await fetched_file.text();
+                    const parsedData = Papa.parse(csvData, { header: true, skipEmptyLines: true });
+                    scannedFiles[file.name].length = parsedData.data.length;
 
-						if (existingRow) {
-							scannedFiles[file.name]['synced'] = [
-								row,
-								...(scannedFiles[file.name]['synced'] ?? [])
-							];
-						} else {
-							scannedFiles[file.name]['rows'] = [row, ...(scannedFiles[file.name]['rows'] ?? [])];
-						}
-					}
+                    for (const row of parsedData.data as any[]) {
+                        const ppirInsuranceId = row['ppir_insuranceid'];
+                        const { data: existingRow, error: selectError } = await supabase
+                            .from('ppir_forms')
+                            .select('ppir_insuranceid')
+                            .eq('ppir_insuranceid', ppirInsuranceId)
+                            .single();
 
-					scannedFiles[file.name]['scanning'] = false;
-				}
-			}
-		} catch (error) {
-			// Type assertion
-			const message = error instanceof Error ? error.message : 'An unknown error occurred';
-			console.error('Sync failed:', message);
-		} finally {
-			console.log(scannedFiles);
-			isScanning = false;
-		}
-	}
+                        if (selectError && selectError.code !== 'PGRST116') {
+                            console.error(`Error checking existence of ${ppirInsuranceId} in ppir_forms:`, selectError);
+                            showToast(`Error checking PPIR form: ${ppirInsuranceId}`, 'error');
+                        } else if (existingRow) {
+                            scannedFiles[file.name].synced.push(row);
+                        } else {
+                            scannedFiles[file.name].rows.push(row);
+                        }
+                    }
 
-	async function syncWithFTP() {
-		isSyncing = true;
-		try {
-			// Iterate over each file
-			for (const file of Object.keys(scannedFiles)) {
-				if (file.endsWith('.csv')) {
-					// Check if the file is a CSV
-					console.log(`Processing file: ${file}`);
-					currentlySyncing = file;
-					const { data: existingFile, error: fileCheckError } = await supabase
-						.from('file_read')
-						.select('*')
-						.eq('file_name', file)
-						.single();
+                    scannedFiles[file.name].scanning = false;
+                    processedFiles++;
+                    showToast(`Processed ${processedFiles} of ${totalFiles} files`, 'info');
+                } catch (fileError) {
+                    console.error(`Error processing file ${file.name}:`, fileError);
+                    showToast(`Error processing file: ${file.name}`, 'error');
+                }
+            }
+        }
+        showToast(`Scan completed. ${processedFiles} files processed.`, 'success');
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'An unknown error occurred';
+        console.error('Scan failed:', message);
+        showToast(`Scan failed: ${message}`, 'error');
+    } finally {
+        isScanning = false;
+    }
+}
+	
+async function syncWithFTP() {
+    isSyncing = true;
+    showToast('Starting database sync...', 'info');
+    try {
+        let totalSynced = 0;
+        let totalErrors = 0;
 
-					if (fileCheckError && fileCheckError.code !== 'PGRST116') {
-						console.error(`Error checking existence of file ${file}:`, fileCheckError);
-						continue; // Skip to the next file if there's an error
-					}
-					let fileReadId;
-					if (existingFile) {
-						// If the file already exists, skip processingconsole.log(`File ${fileName} already exists in the database. Skipping file.`);
-						fileReadId = existingFile.id;
-					} else {
-						// store file to table
-						const { data: fileReadData, error: fileReadError } = await supabase
-							.from('file_read')
-							.insert([{ file_name: file, file_type: 'csv' }])
-							.select('id')
-							.single();
+        for (const file of Object.keys(scannedFiles)) {
+            if (file.endsWith('.csv')) {
+                showToast(`Syncing file: ${file}`, 'info');
+                currentlySyncing = file;
+                
+                try {
+                    const { data: existingFile, error: fileCheckError } = await supabase
+                        .from('file_read')
+                        .select('*')
+                        .eq('file_name', file)
+                        .single();
 
-						if (fileReadError) {
-							console.error(`Error inserting data into file_read for ${file}:`, fileReadError);
-							continue; // Skip to the next file if there's an error
-						}
+                    if (fileCheckError && fileCheckError.code !== 'PGRST116') {
+                        console.error(`Error checking existence of file ${file}:`, fileCheckError);
+                        continue;
+                    }
 
-						fileReadId = fileReadData.id;
-					}
+                    let fileReadId;
+                    if (existingFile) {
+                        fileReadId = existingFile.id;
+                    } else {
+                        const { data: fileReadData, error: fileReadError } = await supabase
+                            .from('file_read')
+                            .insert([{ file_name: file, file_type: 'csv' }])
+                            .select('id')
+                            .single();
 
-					// Get the ID of the inserted file// Download the CSV fileconst csvData = await sftp.get(`/path/to/your/directory/${file.name}`);
-					// const fileReadId = '1';
+                        if (fileReadError) {
+                            console.error(`Error inserting data into file_read for ${file}:`, fileReadError);
+                            continue;
+                        }
+                        fileReadId = fileReadData.id;
+                    }
 
-					// Iterate over each row in the CSV file
-					for (const row of scannedFiles[file]['rows']) {
-						//  Users
-						console.log(row);
-						const assigneeEmail = row['Assignee'];
-						let assigneeId;
-						// Check if the assignee exists in the user tab le
-						const { data: existingUser, error: userSelectError } = await supabase
-							.from('users')
-							.select('*')
-							.eq('email', assigneeEmail)
-							.single();
+                    for (const row of scannedFiles[file].rows) {
+                        try {
+                            const assigneeEmail = row['Assignee'];
+                            let assigneeId;
+                            const { data: existingUser, error: userSelectError } = await supabase
+                                .from('users')
+                                .select('*')
+                                .eq('email', assigneeEmail)
+                                .single();
 
-						if (userSelectError && userSelectError.code !== 'PGRST116') {
-							console.error(`Error checking existence of user ${assigneeEmail}:`, userSelectError);
-							showToast('System Error: Error checking existence new user', 'error');
-							return; // Skip to the next row if there's an error
-						}
-						if (existingUser) {
-							// If the user exists, get the user ID
-							assigneeId = existingUser.id;
-						} else {
-							// If the user does not exist, create a new user and get the ID
-							const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-								email: assigneeEmail,
-								password: '1'
-							});
+                            if (userSelectError && userSelectError.code !== 'PGRST116') {
+                                console.error(`Error checking existence of user ${assigneeEmail}:`, userSelectError);
+                                showToast('System Error: Error checking existence new user', 'error');
+                                continue;
+                            }
 
-							if (!authData.user) {
-								console.error(`Error creating new user for ${assigneeEmail}`);
-								showToast('System Error: Error creating new user', 'error');
-								return; // Skip to the next row if there's an error
-							}
+                            if (existingUser) {
+                                assigneeId = existingUser.id;
+                            } else {
+                                const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+                                    email: assigneeEmail,
+                                    password: '1'
+                                });
 
-							assigneeId = authData.user.id;
-						}
+                                if (!authData.user) {
+                                    console.error(`Error creating new user for ${assigneeEmail}`);
+                                    showToast('System Error: Error creating new user', 'error');
+                                    continue;
+                                }
 
-						const ppirInsuranceId = row['ppir_insuranceid']; // Replace with your actual column name
+                                assigneeId = authData.user.id;
+                            }
 
-						// Check if the row already exists in the ppir_forms table
-						const { data: existingRow, error: selectError } = await supabase
-							.from('ppir_forms')
-							.select('ppir_insuranceid')
-							.eq('ppir_insuranceid', ppirInsuranceId)
-							.single();
+                            const ppirInsuranceId = row['ppir_insuranceid'];
+                            const { data: existingRow, error: selectError } = await supabase
+                                .from('ppir_forms')
+                                .select('ppir_insuranceid')
+                                .eq('ppir_insuranceid', ppirInsuranceId)
+                                .single();
 
-						if (selectError && selectError.code !== 'PGRST116') {
-							console.error(
-								`Error checking existence of ${ppirInsuranceId} in ppir_forms:`,
-								selectError
-							);
-							showToast('System Error: Error checking existence of ppir_form', 'error');
-							return; // Skip to the next row if there's an error
-						}
+                            if (selectError && selectError.code !== 'PGRST116') {
+                                console.error(`Error checking existence of ${ppirInsuranceId} in ppir_forms:`, selectError);
+                                showToast('System Error: Error checking existence of ppir_form', 'error');
+                                continue;
+                            }
 
-						if (!existingRow) {
-							// If the row does not exist, insert it into both ppir_forms and tasks tables\
-							const { data: taskData, error: taskError } = await supabase
-								.from('tasks')
-								.insert([
-									{
-										task_number: `Task-${row['ppir_assignmentid']}`, // Replace with your specific task table column namesservice_group: row['Service Group'],
-										service_type: row['Service Type'],
-										service_group: row['Service Group'].replace('0', 'O'),
-										priority: row['Priority'],
-										assignee: assigneeId, // Store the assignee user ID
-										file_id: fileReadId
-									}
-								])
-								.select('id')
-								.single();
-							if (taskError) {
-								console.error(`Error inserting data into tasks for ${ppirInsuranceId}:`, taskError);
-								showToast(`Error inserting data into tasks for ${ppirInsuranceId}:`, 'error');
-								continue;
-							}
-							const { data: ppirFormData, error: ppirFormError } = await supabase
-								.from('ppir_forms')
-								.insert([
-									{
-										task_id: taskData.id,
-										ppir_assignmentid: `PPIR-${row['ppir_assignmentid']}`,
-										ppir_insuranceid: row['ppir_insuranceid'],
-										ppir_farmername: row['ppir_farmername'],
-										ppir_address: row['ppir_address'],
-										ppir_farmertype: row['ppir_farmertype'],
-										ppir_mobileno: row['ppir_mobileno'],
-										ppir_groupname: row['ppir_groupname'],
-										ppir_groupaddress: row['ppir_groupaddress'],
-										ppir_lendername: row['ppir_lendername'],
-										ppir_lenderaddress: row['ppir_lenderaddress'],
-										ppir_cicno: row['ppir_cicno'],
-										ppir_farmloc: row['ppir_farmloc'],
-										ppir_north: row['ppir_north'],
-										ppir_south: row['ppir_south'],
-										ppir_east: row['ppir_east'],
-										ppir_west: row['ppir_west'],
-										ppir_att_1: row['ppir_att_1'],
-										ppir_att_2: row['ppir_att_2'],
-										ppir_att_3: row['ppir_att_3'],
-										ppir_att_4: row['ppir_att_4'],
-										ppir_area_aci: row['ppir_area_aci'],
-										ppir_area_act: row['ppir_area_act'],
-										ppir_dopds_aci: row['ppir_dopds_aci'],
-										ppir_dopds_act: row['ppir_dopds_act'],
-										ppir_doptp_aci: row['ppir_doptp_aci'],
-										ppir_doptp_act: row['ppir_doptp_act'],
-										ppir_svp_aci: row['ppir_svp_aci'],
-										ppir_svp_act:
-											row['ppir_svp_act'] == '' || !row['ppir_svp_act']
-												? 'rice'
-												: row['ppir_svp_act'],
-										ppir_variety: row['ppir_variety'],
-										ppir_stagecrop: row['ppir_stagecrop'],
-										ppir_remarks: row['ppir_remarks'],
-										ppir_name_insured: row['ppir_name_insured'],
-										ppir_name_iuia: row['ppir_name_iuia'],
-										ppir_sig_insured: row['ppir_sig_insured'],
-										ppir_sig_iuia: row['ppir_sig_iuia']
-										// Add other columns as needed
-									}
-								]);
+                            if (!existingRow) {
+                                const { data: taskData, error: taskError } = await supabase
+                                    .from('tasks')
+                                    .insert([
+                                        {
+                                            task_number: `Task-${row['ppir_assignmentid']}`,
+                                            service_type: row['Service Type'],
+                                            service_group: row['Service Group'].replace('0', 'O'),
+                                            priority: row['Priority'],
+                                            assignee: assigneeId,
+                                            file_id: fileReadId
+                                        }
+                                    ])
+                                    .select('id')
+                                    .single();
 
-							if (ppirFormError) {
-								showToast('Error inserting data into ppir_forms', 'error');
-								console.error(
-									`Error inserting data into ppir_forms for ${ppirInsuranceId}:`,
-									ppirFormError
-								);
-								continue; // Skip to the next row if there's an error
-							}
+                                if (taskError) {
+                                    console.error(`Error inserting data into tasks for ${ppirInsuranceId}:`, taskError);
+                                    showToast(`Error inserting data into tasks for ${ppirInsuranceId}:`, 'error');
+                                    continue;
+                                }
 
-							showToast(
-								`Data for ${ppirInsuranceId} successfully inserted into both ppir_forms and tasks.`,
-								'success'
-							);
-							scannedFiles[file].rows = scannedFiles[file].rows.filter(
-								(_row: any) => _row.ppir_insuranceid != row.ppir_insuranceid
-							);
-							scannedFiles[file].synced = [...scannedFiles[file].synced, row];
-						} else {
-							console.log(
-								`Row with ppir_insuranceid ${ppirInsuranceId} already exists in ppir_forms. Skipping insertion.`
-							);
-						}
-					}
-				}
-			}
-			if (Object.keys(scannedFiles).find((file) => scannedFiles[file].rows.length > 0) != null) {
-				showToast(
-					'Some files were not able to sync properly, please contact the developers',
-					'error'
-				);
-			} else {
-				showToast('Sync completed successfully!', 'success');
-			}
-		} catch (error) {
-			// Type assertion
-			const message = error instanceof Error ? error.message : 'An unknown error occurred';
-			console.error('Sync failed:', message);
-			showToast('Sync failed: ' + message, 'error');
-		} finally {
-			isSyncing = false;
-			currentlySyncing = null;
-			fetchTasks();
-		}
-	}
+                                const { error: ppirFormError } = await supabase
+                                    .from('ppir_forms')
+                                    .insert([
+                                        {
+                                            task_id: taskData.id,
+                                            ppir_assignmentid: `PPIR-${row['ppir_assignmentid']}`,
+                                            ppir_insuranceid: row['ppir_insuranceid'],
+                                            ppir_farmername: row['ppir_farmername'],
+                                            ppir_address: row['ppir_address'],
+                                            ppir_farmertype: row['ppir_farmertype'],
+                                            ppir_mobileno: row['ppir_mobileno'],
+                                            ppir_groupname: row['ppir_groupname'],
+                                            ppir_groupaddress: row['ppir_groupaddress'],
+                                            ppir_lendername: row['ppir_lendername'],
+                                            ppir_lenderaddress: row['ppir_lenderaddress'],
+                                            ppir_cicno: row['ppir_cicno'],
+                                            ppir_farmloc: row['ppir_farmloc'],
+                                            ppir_north: row['ppir_north'],
+                                            ppir_south: row['ppir_south'],
+                                            ppir_east: row['ppir_east'],
+                                            ppir_west: row['ppir_west'],
+                                            ppir_att_1: row['ppir_att_1'],
+                                            ppir_att_2: row['ppir_att_2'],
+                                            ppir_att_3: row['ppir_att_3'],
+                                            ppir_att_4: row['ppir_att_4'],
+                                            ppir_area_aci: row['ppir_area_aci'],
+                                            ppir_area_act: row['ppir_area_act'],
+                                            ppir_dopds_aci: row['ppir_dopds_aci'],
+                                            ppir_dopds_act: row['ppir_dopds_act'],
+                                            ppir_doptp_aci: row['ppir_doptp_aci'],
+                                            ppir_doptp_act: row['ppir_doptp_act'],
+                                            ppir_svp_aci: row['ppir_svp_aci'],
+                                            ppir_svp_act: row['ppir_svp_act'] == '' || !row['ppir_svp_act'] ? 'rice' : row['ppir_svp_act'],
+                                            ppir_variety: row['ppir_variety'],
+                                            ppir_stagecrop: row['ppir_stagecrop'],
+                                            ppir_remarks: row['ppir_remarks'],
+                                            ppir_name_insured: row['ppir_name_insured'],
+                                            ppir_name_iuia: row['ppir_name_iuia'],
+                                            ppir_sig_insured: row['ppir_sig_insured'],
+                                            ppir_sig_iuia: row['ppir_sig_iuia']
+                                        }
+                                    ]);
+
+                                if (ppirFormError) {
+                                    showToast('Error inserting data into ppir_forms', 'error');
+                                    console.error(`Error inserting data into ppir_forms for ${ppirInsuranceId}:`, ppirFormError);
+                                    continue;
+                                }
+
+                                showToast(`Data for ${ppirInsuranceId} successfully inserted into both ppir_forms and tasks.`, 'success');
+                                totalSynced++;
+                                scannedFiles[file].rows = scannedFiles[file].rows.filter((_row: any) => _row.ppir_insuranceid != row.ppir_insuranceid);
+                                scannedFiles[file].synced.push(row);
+                            } else {
+                                console.log(`Row with ppir_insuranceid ${ppirInsuranceId} already exists in ppir_forms. Skipping insertion.`);
+                            }
+                        } catch (rowError) {
+                            console.error(`Error processing row in file ${file}:`, rowError);
+                            showToast(`Error processing row: ${rowError.message}`, 'error');
+                            totalErrors++;
+                        }
+                    }
+                } catch (fileError) {
+                    console.error(`Error syncing file ${file}:`, fileError);
+                    showToast(`Error syncing file: ${file}`, 'error');
+                    totalErrors++;
+                }
+            }
+        }
+
+        if (totalErrors > 0) {
+            showToast(`Sync completed with errors. ${totalSynced} rows synced, ${totalErrors} errors occurred.`, 'warning');
+        } else {
+            showToast(`Sync completed successfully! ${totalSynced} rows synced.`, 'success');
+        }
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'An unknown error occurred';
+        console.error('Sync failed:', message);
+        showToast(`Sync failed: ${message}`, 'error');
+    } finally {
+        isSyncing = false;
+        currentlySyncing = null;
+        await fetchTasks();
+    }
+}
+
+
+async function handleBulkAction() {
+    if (modalType === 'delete_multiple' && confirm_delete !== 'DELETE') {
+        showToast("Please enter 'DELETE' to confirm task deletion!", 'error');
+        return;
+    }
+
+    let successCount = 0;
+    let failureCount = 0;
+
+    for (const task of selectedTasks) {
+        try {
+            if (modalType === 'clear_forms') {
+                await clearPPICForm(task.id);
+                showToast(`Successfully cleared form of ${task.task_number}`, 'success');
+                successCount++;
+            } else {
+                await deleteTask(task.id);
+                showToast(`Successfully deleted task ${task.task_number}`, 'success');
+                successCount++;
+            }
+        } catch (error) {
+            console.error(`Error processing task ${task.task_number}:`, error);
+            showToast(`Failed to process ${task.task_number}: ${error.message}`, 'error');
+            failureCount++;
+        }
+    }
+
+    const action = modalType === 'clear_forms' ? 'cleared' : 'deleted';
+    if (failureCount > 0) {
+        showToast(`Operation completed with errors. ${successCount} tasks ${action}, ${failureCount} failed.`, 'warning');
+    } else {
+        showToast(`Successfully ${action} ${successCount} tasks!`, 'success');
+    }
+
+    selectedTasks = [];
+    confirm_delete = '';
+    await fetchTasks();
+}
+
+
 
 	async function syncWithFTPForce() {
 		isSyncing = true;
@@ -1268,167 +1278,166 @@
 		<div class="flex flex-col h-full" style="height: 45rem;"> <!-- Adjust height to fit your design -->
 			<!-- Table container with a fixed height -->
 			<div class="flex-grow overflow-x-auto">
-				<Table class="select-none h-full">
-					<TableHead class="sticky top-0 border-y border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700">
-	
-						<TableHeadCell class="w-4 p-4">
-							<Checkbox
-								on:click={selectAllTasks}
-								checked={selectedTasks.length >= filteredTasks.length && filteredTasks.length > 0}
-							/>
-						</TableHeadCell>
-						{#each ['Task Name', 'Service Group', 'Service Type', 'Attempts', 'Priority', 'Status', 'Assignee', 'Actions'] as title, index}
-							<TableHeadCell class=" font-normal {index > 1 ? 'text-center' : ''}">
-								<div class="flex items-center {index > 1 ? 'justify-center' : ''}">
-									{title}
-									{#if ['Task Name', 'Service Type', 'Priority'].includes(title)}
-										{#if !sortings.includes(title + ' Desc') && !sortings.includes(title + ' Asc')}
-											<button
-												on:click={() => {
-													sortings.push(title + ' Desc');
-													sortings = sortings;
-													sortFilterTasks();
-												}}
-											>
-												<ArrowUpDownOutline
-													class="ml-2 cursor-pointer hover:text-green-400"
-													size="sm"
-												/>
-											</button>
-										{:else if sortings.includes(title + ' Desc')}
-											<button
-												on:click={() => {
-													sortings = sortings.filter((item) => item !== title + ' Desc');
-													sortings.push(title + ' Asc');
-													sortings = sortings;
-													sortFilterTasks();
-												}}
-											>
-												<ArrowDownOutline
-													class="ml-2 cursor-pointer text-green-500 hover:text-green-400"
-													size="sm"
-												/>
-											</button>
-										{:else}
-											<button
-												on:click={() => {
-													sortings = sortings.filter((item) => item !== title + ' Asc');
-													sortFilterTasks();
-												}}
-											>
-												<ArrowUpOutline
-													class="ml-2 cursor-pointer text-green-500 hover:text-green-400"
-													size="sm"
-												/>
-											</button>
-										{/if}
-									{/if}
-								</div>
-							</TableHeadCell>
-						{/each}
-					</TableHead>
-					<TableBody class="h-full" style="max-height: 40rem; overflow-y: auto;">
-						{#if filteredTasks.length === 0}
-							<tr>
-								<td colspan="9" class="text-center py-8">
-									<img src="/images/empty-box.png" alt="No tasks available" class="mx-auto mb-4 mt-20" style="width: 250px; height: auto;" />
-									<p class="text-gray-500 dark:text-gray-400">No tasks available</p>
-								</td>
-							</tr>
-						{:else}
-					
-					
-							{#each filteredTasks.slice((currentPage - 1) * maxPageItems, (currentPage - 1) * maxPageItems + maxPageItems) as task}
-								<TableBodyRow class="text-base hover:bg-gray-100 dark:hover:bg-gray-800">
-							  <TableBodyCell on:click={() => selectTasks(task)} class="w-4 p-4">
-								<Checkbox checked={selectedTasks.includes(task)} />
-							  </TableBodyCell>
-							  <TableBodyCell class="flex items-center space-x-6 whitespace-nowrap p-4">
-								<div class="text-sm font-normal text-gray-500 dark:text-gray-400">
-								  {#if task.status == 'completed'}
-									<button
-									  on:click={() => generateFormView(task, true)}
-									  class="flex cursor-pointer text-base font-semibold text-gray-900 hover:!text-green-500 dark:text-white"
-									>
-									  <PrinterSolid class="mr-2"></PrinterSolid>
-									  {task.task_number == '' ? 'NOT SET' : task.task_number}
-									</button>
-								  {:else}
-									<div class="flex text-base font-semibold text-gray-900 dark:text-white">
-									  {task.task_number == '' ? 'NOT SET' : task.task_number}
-									</div>
-								  {/if}
-								  <div class="text-sm font-normal text-gray-500 dark:text-gray-400">
-									{task.task_type ?? 'ppir'}
-								  </div>
-								</div>
-							  </TableBodyCell>
-							  <TableBodyCell class="p-4 text-center font-normal text-gray-500 dark:text-gray-400">
-								{task.service_group}
-							  </TableBodyCell>
-							  <TableBodyCell
-								class="max-w-sm overflow-hidden truncate p-4 text-center text-base font-normal text-gray-500 dark:text-gray-400 xl:max-w-xs"
-							  >
-								{task.service_type}
-							  </TableBodyCell>
-							  <TableBodyCell class="p-4 text-center">
-								{task.attempt_count}
-							  </TableBodyCell>
-							  <TableBodyCell
-								class="p-4 font-normal {setPriorityColor(
-								  task.priority
-								)} dark:bg-opacity-25 dark:bg-${setPriorityColor(task.priority)} text-center"
-							  >
-								{task.priority.toUpperCase()}
-							  </TableBodyCell>
-							  <TableBodyCell
-								class="p-4 font-normal {setStatusColor(
-								  task.status
-								)} dark:bg-opacity-25 dark:bg-${setStatusColor(task.status)} text-center"
-							  >
-								{task.status.toUpperCase()}
-							  </TableBodyCell>
-							  <TableBodyCell class="p-4 text-center font-normal text-gray-500 dark:text-gray-400">
-								<div class="text-sm font-normal text-gray-500 dark:text-gray-400">
-								  <div class="text-base font-semibold text-gray-900 dark:text-white">
-									{task.users.inspector_name.toUpperCase()}
-								  </div>
-								  <div class="text-sm font-normal text-gray-500 dark:text-gray-400">
-									{task.users.email.toLowerCase()}
-								  </div>
-								</div>
-							  </TableBodyCell>
-							  <TableBodyCell class="space-x-2 text-center">
-								<Button
-								  size="sm"
-								  class="gap-2 px-3"
-								  on:click={() => {
-									selected_task = task;
-									if (task.ppir_forms) {
-									  formView = generateFormView(selected_task);
-									}
-									toggle(Task);
-								  }}
-								>
-								  <EditOutline size="sm" /> Manage
-								</Button>
-								<Button
-								  color="red"
-								  size="sm"
-								  class="gap-2 px-3"
-								  on:click={() => {
-									selected_task = task;
-									toggle(Delete);
-								  }}
-								>
-								  <TrashBinSolid size="sm" /> Delete
-								</Button>
-							  </TableBodyCell>
-							</TableBodyRow>
-							{/each}
-						{/if}
-					</TableBody>
-				</Table>
+				
+<Table class="select-none h-full">
+	<TableHead class="sticky top-0 border-y border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700">
+	  <TableHeadCell class="w-4 p-4">
+		<Checkbox
+		  on:click={selectAllTasks}
+		  checked={selectedTasks.length >= filteredTasks.length && filteredTasks.length > 0}
+		/>
+	  </TableHeadCell>
+	  {#each ['Task Name', 'Service Group', 'Service Type', 'Attempts', 'Priority', 'Status', 'Assignee', 'Actions'] as title, index}
+		<TableHeadCell class="p-4 font-medium text-gray-900 dark:text-white {index > 1 ? 'text-center' : ''}">
+		  <div class="flex items-center {index > 1 ? 'justify-center' : ''}">
+			{title}
+			{#if ['Task Name', 'Service Type', 'Priority'].includes(title)}
+			  {#if !sortings.includes(title + ' Desc') && !sortings.includes(title + ' Asc')}
+				<button
+				  on:click={() => {
+					sortings.push(title + ' Desc');
+					sortings = sortings;
+					sortFilterTasks();
+				  }}
+				>
+				  <ArrowUpDownOutline
+					class="ml-2 cursor-pointer hover:text-green-400"
+					size="sm"
+				  />
+				</button>
+			  {:else if sortings.includes(title + ' Desc')}
+				<button
+				  on:click={() => {
+					sortings = sortings.filter((item) => item !== title + ' Desc');
+					sortings.push(title + ' Asc');
+					sortings = sortings;
+					sortFilterTasks();
+				  }}
+				>
+				  <ArrowDownOutline
+					class="ml-2 cursor-pointer text-green-500 hover:text-green-400"
+					size="sm"
+				  />
+				</button>
+			  {:else}
+				<button
+				  on:click={() => {
+					sortings = sortings.filter((item) => item !== title + ' Asc');
+					sortFilterTasks();
+				  }}
+				>
+				  <ArrowUpOutline
+					class="ml-2 cursor-pointer text-green-500 hover:text-green-400"
+					size="sm"
+				  />
+				</button>
+			  {/if}
+			{/if}
+		  </div>
+		</TableHeadCell>
+	  {/each}
+	</TableHead>
+	<TableBody class="h-full" style="max-height: 40rem; overflow-y: auto;">
+	  {#if filteredTasks.length === 0}
+		<tr>
+		  <td colspan="9" class="text-center py-8">
+			<img src="/images/empty-box.png" alt="No tasks available" class="mx-auto mb-4 mt-20" style="width: 250px; height: auto;" />
+			<p class="text-gray-500 dark:text-gray-400">No tasks available</p>
+		  </td>
+		</tr>
+	  {:else}
+		{#each filteredTasks.slice((currentPage - 1) * maxPageItems, (currentPage - 1) * maxPageItems + maxPageItems) as task}
+		  <TableBodyRow class="text-base hover:bg-gray-100 dark:hover:bg-gray-800">
+			<TableBodyCell on:click={() => selectTasks(task)} class="w-4 p-4">
+			  <Checkbox checked={selectedTasks.includes(task)} />
+			</TableBodyCell>
+			<TableBodyCell class="flex items-center space-x-6 whitespace-nowrap p-4">
+			  <div class="text-sm font-normal text-gray-500 dark:text-gray-400">
+				{#if task.status == 'completed'}
+				  <button
+					on:click={() => generateFormView(task, true)}
+					class="flex cursor-pointer text-base font-semibold text-gray-900 hover:!text-green-500 dark:text-white"
+				  >
+					<PrinterSolid class="mr-2"></PrinterSolid>
+					{task.task_number == '' ? 'NOT SET' : task.task_number}
+				  </button>
+				{:else}
+				  <div class="flex text-base font-semibold text-gray-900 dark:text-white">
+					{task.task_number == '' ? 'NOT SET' : task.task_number}
+				  </div>
+				{/if}
+				<div class="text-sm font-normal text-gray-500 dark:text-gray-400">
+				  {task.task_type ?? 'ppir'}
+				</div>
+			  </div>
+			</TableBodyCell>
+			<TableBodyCell class="p-4 text-center font-normal text-gray-500 dark:text-gray-400">
+			  {task.service_group}
+			</TableBodyCell>
+			<TableBodyCell
+			  class="max-w-sm overflow-hidden truncate p-4 text-center text-base font-normal text-gray-500 dark:text-gray-400 xl:max-w-xs"
+			>
+			  {task.service_type}
+			</TableBodyCell>
+			<TableBodyCell class="p-4 text-center">
+			  {task.attempt_count}
+			</TableBodyCell>
+			<TableBodyCell
+			  class="p-4 font-normal {setPriorityColor(
+				task.priority
+			  )} dark:bg-opacity-25 dark:bg-${setPriorityColor(task.priority)} text-center"
+			>
+			  {task.priority.toUpperCase()}
+			</TableBodyCell>
+			<TableBodyCell
+			  class="p-4 font-normal {setStatusColor(
+				task.status
+			  )} dark:bg-opacity-25 dark:bg-${setStatusColor(task.status)} text-center"
+			>
+			  {task.status.toUpperCase()}
+			</TableBodyCell>
+			<TableBodyCell class="p-4 text-center font-normal text-gray-500 dark:text-gray-400">
+				<div class="text-sm font-normal text-gray-500 dark:text-gray-400">
+				  <div class="text-base font-semibold text-gray-900 dark:text-white">
+					{task.users.inspector_name.toUpperCase()}
+				  </div>
+				  <div class="text-sm font-normal text-gray-500 dark:text-gray-400">
+					{task.users.email.toLowerCase()}
+				  </div>
+				</div>
+			  </TableBodyCell>
+			  <TableBodyCell class="space-x-2 text-center">
+				<Button
+				  size="sm"
+				  class="gap-2 px-3"
+				  on:click={() => {
+					selected_task = task;
+					if (task.ppir_forms) {
+					  formView = generateFormView(selected_task);
+					}
+					toggle(Task);
+				  }}
+				>
+				  <EditOutline size="sm" /> Manage
+				</Button>
+				<Button
+				  color="red"
+				  size="sm"
+				  class="gap-2 px-3"
+				  on:click={() => {
+					selected_task = task;
+					toggle(Delete);
+				  }}
+				>
+				  <TrashBinSolid size="sm" /> Delete
+				</Button>
+			  </TableBodyCell>
+			</TableBodyRow>
+		  {/each}
+		{/if}
+	  </TableBody>
+	</Table>
+
 			</div>
 			<!-- Pagination and buttons below the table items -->
 			<div>
@@ -1467,166 +1476,129 @@
 	/>
 </Drawer>
 
+
 <Modal bind:open size={modalType == 'sync' ? 'md' : 'sm'}>
-	{#if modalType == 'sync'}
-		<div
-			class="mx-auto mb-4 mt-8 flex h-14 w-14 items-center justify-center rounded-full bg-green-500"
-		>
-			<ArrowsRepeatOutline class="  h-10 w-10 text-white" />
-		</div>
-		{#if isScanning}
-			<h3 class="mb-6 text-center text-lg text-gray-500 dark:text-gray-400">
-				Please wait for the system to finish scanning the FTP server
-			</h3>
-		{:else if isSyncing}
-			<h3 class="mb-6 text-center text-lg text-gray-500 dark:text-gray-400">
-				Please wait for the system to finish syncing the FTP server
-			</h3>
-		{:else}
-			<h3 class="mb-6 text-center text-lg text-gray-500 dark:text-gray-400">
-				Here are the list of files synced from the FTP Server
-			</h3>
-		{/if}
+    {#if modalType == 'sync'}
+        <div class="mx-auto mb-4 mt-8 flex h-14 w-14 items-center justify-center rounded-full bg-green-500">
+            <ArrowsRepeatOutline class="h-10 w-10 text-white" />
+        </div>
+        {#if isScanning}
+            <h3 class="mb-6 text-center text-lg text-gray-500 dark:text-gray-400">
+                Please wait for the system to finish scanning the FTP server
+            </h3>
+        {:else if isSyncing}
+            <h3 class="mb-6 text-center text-lg text-gray-500 dark:text-gray-400">
+                Please wait for the system to finish syncing the FTP server
+            </h3>
+        {:else}
+            <h3 class="mb-6 text-center text-lg text-gray-500 dark:text-gray-400">
+                Here are the list of files synced from the FTP Server
+            </h3>
+        {/if}
 
-		<div
-			class="flex h-96 w-full flex-col items-center gap-2 overflow-y-scroll rounded-xl bg-black/10 p-4"
-		>
-			{#each Object.keys(scannedFiles) as file}
-				<div
-					class="{scannedFiles[file].scanning || currentlySyncing == file
-						? 'bg-gray-600 dark:bg-gray-400/10 '
-						: 'bg-gray-800 dark:bg-black/10'} flex min-h-16 w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded px-4 hover:bg-gray-600 dark:hover:bg-gray-400/10"
-				>
-					<div class="text-white">
-						{file}
-					</div>
-					{#if scannedFiles[file].scanning}
-						<div class=" text-sm text-gray-400">Scanning</div>
-					{:else if scannedFiles[file].rows.length > 0}
-						<div class="text-sm text-orange-400">
-							{scannedFiles[file].synced.length} / {scannedFiles[file].length} synced
-						</div>
-					{:else if currentlySyncing == file}
-						<div class=" text-sm text-green-500">Syncing...</div>
-					{:else}
-						<div class=" text-sm text-green-500">Synced</div>
-					{/if}
-				</div>
-			{/each}
+        <div class="flex h-96 w-full flex-col items-center gap-2 overflow-y-scroll rounded-xl bg-black/10 p-4">
+            {#each Object.keys(scannedFiles) as file}
+                <div class="{scannedFiles[file].scanning || currentlySyncing == file
+                    ? 'bg-gray-600 dark:bg-gray-400/10 '
+                    : 'bg-gray-800 dark:bg-black/10'} flex min-h-16 w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded px-4 hover:bg-gray-600 dark:hover:bg-gray-400/10">
+                    <div class="text-white">
+                        {file}
+                    </div>
+                    {#if scannedFiles[file].scanning}
+                        <div class="text-sm text-gray-400">Scanning</div>
+                    {:else if scannedFiles[file].rows.length > 0}
+                        <div class="text-sm text-orange-400">
+                            {scannedFiles[file].synced.length} / {scannedFiles[file].length} synced
+                        </div>
+                    {:else if currentlySyncing == file}
+                        <div class="text-sm text-green-500">Syncing...</div>
+                    {:else}
+                        <div class="text-sm text-green-500">Synced</div>
+                    {/if}
+                </div>
+            {/each}
 
-			{#if isScanning}
-				<div>
-					<span class="loader"></span>
-					<span class="text-gray-40 mt-2 text-sm">
-						{Object.keys(scannedFiles).find((file) => scannedFiles[file].scanning) == null
-							? 'Please wait ...'
-							: 'Scanning a file ...'}
-					</span>
-				</div>
-			{:else if isSyncing}
-				<div>
-					<span class="loader"></span>
-					<span class="text-gray-40 mt-2 text-sm">
-						{currentlySyncing == null ? 'Please wait ...' : 'Syncing a file ...'}
-					</span>
-				</div>
-			{:else if Object.keys(scannedFiles).length <= 0}
-				<div class="flex h-full w-full items-center justify-center">
-					No files listed, press 'Scan FTP Server' to scan for files.
-				</div>
-			{/if}
-		</div>
+            {#if isScanning}
+                <div>
+                    <span class="loader"></span>
+                    <span class="text-gray-40 mt-2 text-sm">
+                        {Object.keys(scannedFiles).find((file) => scannedFiles[file].scanning) == null
+                            ? 'Please wait ...'
+                            : 'Scanning a file ...'}
+                    </span>
+                </div>
+            {:else if isSyncing}
+                <div>
+                    <span class="loader"></span>
+                    <span class="text-gray-40 mt-2 text-sm">
+                        {currentlySyncing == null ? 'Please wait ...' : 'Syncing a file ...'}
+                    </span>
+                </div>
+            {:else if Object.keys(scannedFiles).length <= 0}
+                <div class="flex h-full w-full items-center justify-center">
+                    No files listed, press 'Scan FTP Server' to scan for files.
+                </div>
+            {/if}
+        </div>
 
-		<div class="flex items-center justify-center">
-			<Button
-				color="red"
-				class="mr-2"
-				disabled={isScanning || isSyncing || Object.keys(scannedFiles).length <= 0}
-				on:click={async () => {
-					await syncWithFTP();
-				}}
-			>
-				{#if isSyncing}
-					<span class="loader mr-2"></span> Sync to Database
-				{:else}
-					Sync to Database
-				{/if}
-			</Button>
-			<Button
-				color="red"
-				class="mr-2"
-				disabled={isScanning || isSyncing}
-				on:click={async () => {
-					await scanFTP();
-				}}
-			>
-				{#if isScanning}
-					<span class="loader mr-2"></span> Scan FTP Server
-				{:else}
-					Scan FTP Server
-				{/if}
-			</Button>
-		</div>
-	{:else}
-		<ExclamationCircleSolid class="mx-auto mb-4 mt-8 h-10 w-10 text-red-600" />
+        <div class="flex items-center justify-center">
+            <Button
+                color="red"
+                class="mr-2"
+                disabled={isScanning || isSyncing || Object.keys(scannedFiles).length <= 0}
+                on:click={syncWithFTP}
+            >
+                {#if isSyncing}
+                    <span class="loader mr-2"></span> Sync to Database
+                {:else}
+                    Sync to Database
+                {/if}
+            </Button>
+            <Button
+                color="red"
+                class="mr-2"
+                disabled={isScanning || isSyncing}
+                on:click={scanFTP}
+            >
+                {#if isScanning}
+                    <span class="loader mr-2"></span> Scan FTP Server
+                {:else}
+                    Scan FTP Server
+                {/if}
+            </Button>
+        </div>
+    {:else}
+        <ExclamationCircleSolid class="mx-auto mb-4 mt-8 h-10 w-10 text-red-600" />
 
-		<h3 class="mb-6 text-center text-lg text-gray-500 dark:text-gray-400">
-			{modalType == 'clear_forms'
-				? 'Are you sure you want reset PPIR forms of the selected tasks?'
-				: 'Are you sure you want to permanently delete the selected tasks?'}
-		</h3>
-		{#if modalType == 'delete_multiple'}
-			<Label class="space-y-2">
-				<span>Type 'DELETE' to confirm deletion of selected tasks</span>
-				<Input
-					on:keyup={handleConfirmDelete}
-					name="delete"
-					class="border font-normal outline-none"
-					placeholder="Type 'DELETE'"
-					required
-				/>
-			</Label>
-		{/if}
+        <h3 class="mb-6 text-center text-lg text-gray-500 dark:text-gray-400">
+            {modalType == 'clear_forms'
+                ? 'Are you sure you want to reset PPIR forms of the selected tasks?'
+                : 'Are you sure you want to permanently delete the selected tasks?'}
+        </h3>
+        {#if modalType == 'delete_multiple'}
+            <Label class="space-y-2">
+                <span>Type 'DELETE' to confirm deletion of selected tasks</span>
+                <Input
+                    on:keyup={handleConfirmDelete}
+                    name="delete"
+                    class="border font-normal outline-none"
+                    placeholder="Type 'DELETE'"
+                    required
+                />
+            </Label>
+        {/if}
 
-		<div class="flex items-center justify-center">
-			<Button
-				color="red"
-				class="mr-2"
-				on:click={async () => {
-					if (modalType == 'delete_multiple' && confirm_delete != 'DELETE') {
-						showToast(`Please enter 'DELETE' to confirm task deletion!`, 'error');
-						return;
-					}
-					for (const t of selectedTasks) {
-						try {
-							if (modalType == 'clear_forms') {
-								await clearPPICForm(t.id);
-								showToast(`Successfully cleared form of ${t.task_number}`, 'success');
-							} else {
-								await deleteTask(t.id);
-								showToast(`Successfully deleted form of ${t.task_number}`, 'success');
-							}
-						} catch (e) {
-							if (modalType == 'clear_forms') {
-								showToast(`Failed to clear form of ${t.task_number}`, 'error');
-							} else {
-								showToast(`Failed to delete ${t.task_number}`, 'error');
-							}
-							return;
-						}
-					}
-					if (modalType == 'clear_forms') {
-						showToast(`Successfully cleared selected forms!`, 'success');
-					} else {
-						showToast(`Successfully deleted selected forms!`, 'success');
-					}
-					open = false;
-				}}
-				>Yes, I'm sure
-			</Button>
-			<Button color="alternative" on:click={() => (open = false)}>No, cancel</Button>
-		</div>
-	{/if}
+        <div class="flex items-center justify-center">
+            <Button
+                color="red"
+                class="mr-2"
+                on:click={handleBulkAction}
+            >
+                Yes, I'm sure
+            </Button>
+            <Button color="alternative" on:click={() => (open = false)}>No, cancel</Button>
+        </div>
+    {/if}
 </Modal>
 
 <Toast {...toastProps} />
