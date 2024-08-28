@@ -593,73 +593,20 @@
 		<TaskTimeline userId={selectedUserId} on:back={goBack} />
 	{:else}
 		<div class="p-4">
-			<Heading
-				tag="h1"
-				class="mb-7 text-xl font-semibold text-gray-900 dark:text-white sm:text-2xl"
-			>
-				Inspectors Weekly Tasks
-			</Heading>
-
-			<div class="mb-4 flex flex-wrap items-center justify-between gap-4">
-				{#if selectedTable === 'users'}
-					<div class="flex items-center gap-6">
-						<div class="flex items-center">
-							<label for="monthSelect" class="mr-2 text-sm text-gray-700 dark:text-gray-300"
-								>Month:</label
-							>
-							<select
-								id="monthSelect"
-								on:change={handleMonthChange}
-								bind:value={selectedMonth}
-								class="w-32 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:focus:ring-indigo-400"
-							>
-								{#each monthOptions as month}
-									<option value={month} selected={month === selectedMonth}>
-										{new Date(0, month).toLocaleString('default', { month: 'long' })}
-									</option>
-								{/each}
-							</select>
-						</div>
-						<div class="flex items-center">
-							<label for="daySelect" class="mr-2 text-sm text-gray-700 dark:text-gray-300"
-								>Day:</label
-							>
-							<select
-								id="daySelect"
-								on:change={handleDayChange}
-								bind:value={selectedDay}
-								class="w-20 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:focus:ring-indigo-400"
-							>
-								{#each dayOptions as day}
-									<option value={day} selected={day === selectedDay}>{day}</option>
-								{/each}
-							</select>
-						</div>
-						<div class="flex items-center">
-							<label for="weekSelect" class="mr-2 text-sm text-gray-700 dark:text-gray-300"
-								>Week:</label
-							>
-							<select
-								id="weekSelect"
-								on:change={handleWeekChange}
-								bind:value={selectedWeek}
-								class="w-28 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:focus:ring-indigo-400"
-							>
-								{#each weekOptions as week}
-									<option value={week} selected={week === selectedWeek}>Week {week}</option>
-								{/each}
-							</select>
-						</div>
-					</div>
-				{/if}
-				<!-- EXPANDER -->
-				<div class="flex-1"></div>
-				<div class="mb-4 flex items-center gap-2">
+			<div class="mb-4 flex items-center justify-between">
+				<Heading
+					tag="h1"
+					class="text-xl font-semibold text-gray-900 dark:text-white sm:text-2xl"
+				>
+					Inspectors Weekly Tasks
+				</Heading>
+				
+				<div class="flex items-center gap-2">
 					<span class="text-right text-sm text-gray-700 dark:text-gray-300">Current:</span>
 					<Select
 						on:change={handleTableChange}
 						bind:value={selectedTable}
-						class="w-full max-w-xs rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:focus:ring-indigo-400"
+						class="w-48 max-w-xs rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:focus:ring-indigo-400"
 						placeholder=""
 					>
 						<option value="users">User Task Summary</option>
@@ -669,6 +616,57 @@
 				</div>
 			</div>
 
+			{#if selectedTable === 'users'}
+				<div class="mb-4 flex items-center gap-6">
+					<div class="flex items-center">
+						<label for="monthSelect" class="mr-2 text-sm text-gray-700 dark:text-gray-300"
+							>Month:</label
+						>
+						<select
+							id="monthSelect"
+							on:change={handleMonthChange}
+							bind:value={selectedMonth}
+							class="w-32 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:focus:ring-indigo-400"
+						>
+							{#each monthOptions as month}
+								<option value={month} selected={month === selectedMonth}>
+									{new Date(0, month).toLocaleString('default', { month: 'long' })}
+								</option>
+							{/each}
+						</select>
+					</div>
+					<div class="flex items-center">
+						<label for="daySelect" class="mr-2 text-sm text-gray-700 dark:text-gray-300"
+							>Day:</label
+						>
+						<select
+							id="daySelect"
+							on:change={handleDayChange}
+							bind:value={selectedDay}
+							class="w-20 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:focus:ring-indigo-400"
+						>
+							{#each dayOptions as day}
+								<option value={day} selected={day === selectedDay}>{day}</option>
+							{/each}
+						</select>
+					</div>
+					<div class="flex items-center">
+						<label for="weekSelect" class="mr-2 text-sm text-gray-700 dark:text-gray-300"
+							>Week:</label
+						>
+						<select
+							id="weekSelect"
+							on:change={handleWeekChange}
+							bind:value={selectedWeek}
+							class="w-28 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:focus:ring-indigo-400"
+						>
+							{#each weekOptions as week}
+								<option value={week} selected={week === selectedWeek}>Week {week}</option>
+							{/each}
+						</select>
+					</div>
+				</div>
+			{/if}
 			{#if selectedTable === 'users'}
 				<div class="mb-4 flex justify-end space-x-4">
 					<Button
