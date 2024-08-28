@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import TaskTimeline from './TaskTimeline.svelte';
+	import { AdjustmentsHorizontalSolid } from 'flowbite-svelte-icons';
+
 	import {
 		Breadcrumb,
 		BreadcrumbItem,
@@ -670,25 +672,31 @@
 			{#if selectedTable === 'users'}
 				<div class="mb-4 flex justify-end space-x-4">
 					<Button
-						on:click={() => (showColumnModal = true)}
-						color="blue"
-						size="xs"
-						class="flex items-center gap-2"
-					>
-						<FilePdfOutline /> Customize Columns
-					</Button>
-					<Button
-						class="flex items-center gap-2 text-xs"
-						color="red"
-						size="xs"
-						on:click={generatePDF} disabled={!isDaySelected} ><FilePdfOutline /> Download PDF</Button
-					>
-					<Button
-						class="flex items-center gap-2 text-xs"
-						color="green"
-						size="xs"
-						on:click={generateExcel} disabled={!isDaySelected} ><TableColumnOutline /> Download Excel</Button
-					>
+					on:click={() => (showColumnModal = true)}
+					color="blue"
+					size="xs"
+					class="flex items-center gap-2"
+				>
+					<AdjustmentsHorizontalSolid /> Customize Columns
+				</Button>
+				<Button
+					class="flex items-center gap-2 text-xs"
+					color="red"
+					size="xs"
+					on:click={generatePDF}
+					disabled={!isDaySelected}
+				>
+					<FilePdfOutline /> Download PDF
+				</Button>
+				<Button
+					class="flex items-center gap-2 text-xs"
+					color="green"
+					size="xs"
+					on:click={generateExcel}
+					disabled={!isDaySelected}
+				>
+					<TableColumnOutline /> Download Excel
+				</Button>
 
 				</div>
 			{/if}
