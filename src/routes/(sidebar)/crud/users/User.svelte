@@ -77,7 +77,7 @@
 				// Prefill role and region if logged-in user is a Regional_Admin and creating a new user
 				if (loggedInUser.role === 'Regional_Admin' && !current_user) {
 					selectedRole = 'Agent';
-					selectedRegionId = regions.find(region => region.region_name === 'Region 5')?.id || '';
+					selectedRegionId = regions.find(region => region.region_name === loggedInUser.region_name)?.id || '';
 				}
 			}
 		}
@@ -96,8 +96,10 @@
 		}
 	}
 
-	function handleRoleChange(event: { target: { value: string } }) {
-		selectedRole = event.target.value;
+	// Corrected handleRoleChange function
+	function handleRoleChange(event: Event) {
+		const target = event.target as HTMLSelectElement; // Narrow down the type to HTMLSelectElement
+		selectedRole = target.value;
 		if (current_user) {
 			current_user.role = selectedRole;
 		}
@@ -114,9 +116,9 @@
 
 			regions = regionsData as Region[];
 
-			// Set default region to Region 5 for Regional_Admin
+			// Set default region to the Regional_Admin's region if logged-in user is Regional_Admin
 			if (loggedInUser?.role === 'Regional_Admin' && !current_user) {
-				selectedRegionId = regions.find(region => region.region_name === 'Region 5')?.id || '';
+				selectedRegionId = regions.find(region => region.region_name === loggedInUser.region_name)?.id || '';
 			}
 		} catch (error) {
 			console.error('Error fetching regions:', error);
@@ -421,7 +423,7 @@
 						>
 							<option value="">Select a role</option>
 							{#each getAllowedRoles() as role}
-								<option value={role}>{role.replace('_', ' ')}</option>
+								<option value={role} selected={role === selectedRole}>{role.replace('_', ' ')}</option>
 							{/each}
 						</Select>
 					</Label>
@@ -435,7 +437,7 @@
 						>
 							<option value="">Select a region</option>
 							{#each regions as region}
-								<option value={region.id}>{region.region_name}</option>
+								<option value={region.id} selected={region.id === selectedRegionId}>{region.region_name}</option>
 							{/each}
 						</Select>
 					</Label>
