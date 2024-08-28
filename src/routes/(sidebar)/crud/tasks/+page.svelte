@@ -24,8 +24,7 @@
 		ArrowUpDownOutline,
 		ArrowUpOutline,
 		PrinterSolid,
-		CogSolid,
-		DotsVerticalOutline,
+		ReplySolid,
 		EditOutline,
 		ExclamationCircleSolid,
 		TrashBinSolid,
@@ -1225,34 +1224,37 @@
 					</Button>
 				{/if}
 				<Button
-					class="whitespace-nowrap rounded-md bg-gray-200 px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:focus:ring-indigo-400"
+					class="flex items-center gap-2 whitespace-nowrap rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:focus:ring-indigo-400"
 					on:click={async () => {
 						modalType = 'clear_forms';
 						open = true;
 					}}
 					disabled={selectedTasks.length == 0}
 				>
-					Reset PPIC Forms
+				<ReplySolid size="sm" /> Reset PPIC Forms
+
+
 				</Button>
+				
 				<Button
 					color="red"
-					class="whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400"
+					class="flex items-center gap-2 whitespace-nowrap rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400"
 					on:click={async () => {
 						modalType = 'delete_multiple';
 						open = true;
 					}}
 					disabled={selectedTasks.length == 0}
 				>
-					Delete Tasks
-				</Button>
+				<TrashBinSolid size="sm" /> Delete Tasks
+			</Button>
 				<Button
-					class="whitespace-nowrap rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400"
+				class="flex items-center gap-2 whitespace-nowrap rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400"
 					on:click={() => {
 						selected_task = null;
 						toggle(Task);
 					}}
 				>
-				<PlusOutline size="sm" /> Add Task
+				<PlusOutline size="sm"/> Add Task
 				</Button>
 			</div>
 		</Toolbar>
