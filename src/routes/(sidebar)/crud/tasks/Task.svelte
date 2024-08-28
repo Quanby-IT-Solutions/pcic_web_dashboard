@@ -23,13 +23,14 @@
 	export let markAsComplete: any = null;
 	export let clearForm: any = null;
 	export let formView: any;
+	export let regions:any[] = [];
 	let filteredUsers: any[] = [...users];
 
 	let task_name: string;
 	let service_group: string;
 	let priority: string;
 	let status: string = 'for dispatch';
-	let ppir_form: any;
+	let ppir_form: any = {};
 
 	let open: boolean = false;
 
@@ -37,6 +38,26 @@
 
 	let completeWarning: boolean = true;
 	let viewForm = false;
+
+	let ppir_form_initial_columns = [
+		'ppir_assignmentid','ppir_insuranceid','ppir_farmername',
+		'ppir_address', 'ppir_farmertype',
+		'ppir_mobileno',
+		'ppir_groupname',
+		'ppir_groupaddress',
+		'ppir_lendername',
+		'ppir_lenderaddress',
+		'ppir_cicno',
+		'ppir_farmloc',
+		'ppir_north',
+		'ppir_south',
+		'ppir_east',
+		'ppir_west',
+		'ppir_area_aci',
+		'ppir_dopds_aci',
+		'ppir_doptp_aci',
+		'ppir_svp_aci',
+	];
 
 	onMount(() => {
 		if (selected_task) {
@@ -107,21 +128,22 @@
 	};
 
 	const getTypeFromPO = (PO: string) => {
-		switch (PO) {
-			case 'PO4A':
-				return 'Region 04A PPIR';
-			case 'PO4B':
-				return 'Region 04B PPIR';
-			default:
-				if (!PO) {
-					return null;
-				}
-				if (PO.split('O')[1].length > 1) {
-					return 'Region ' + PO.split('O')[1] + ' PPIR';
-				} else {
-					return 'Region 0' + PO.split('O')[1] + ' PPIR';
-				}
-		}
+		return `${regions.find((region)=>region.region_code == PO).region_name} PPIR`
+		// switch (PO) {
+		// 	case 'PO4A':
+		// 		return 'Region 04A PPIR';
+		// 	case 'PO4B':
+		// 		return 'Region 04B PPIR';
+		// 	default:
+		// 		if (!PO) {
+		// 			return null;
+		// 		}
+		// 		if (PO.split('O')[1].length > 1) {
+		// 			return 'Region ' + PO.split('O')[1] + ' PPIR';
+		// 		} else {
+		// 			return 'Region 0' + PO.split('O')[1] + ' PPIR';
+		// 		}
+		// }
 	};
 </script>
 
@@ -149,9 +171,11 @@
 
 		<Label class="space-y-2">
 			<span>Service Group</span>
-			<Select class="border-gray-300 font-normal outline-none" on:change={handlePOChange} required>
+			<Select
+			disabled={regions.length == 1}
+			class="border-gray-300 font-normal outline-none" bind:value={service_group} required>
 				<option value={null} selected>Select Type</option>
-				{#each Array.from({ length: 17 }, (_, i) => i) as num}
+				<!-- {#each Array.from({ length: 17 }, (_, i) => i) as num}
 					{#if service_group == getPOFromIndex(num + 1)}
 						<option selected value={getPOFromIndex(num + 1)}
 							>Region {getRegionFromPO(num + 1)}</option
@@ -159,7 +183,21 @@
 					{:else}
 						<option value={getPOFromIndex(num + 1)}>Region {getRegionFromPO(num + 1)}</option>
 					{/if}
-				{/each}
+				{/each} -->
+				{#if regions.length == 1}
+					{#each regions as region}
+						<option selected value={region.region_code}>{region.region_code}</option>
+					{/each}
+				{:else}
+					{#each regions as region}
+						{#if service_group == region.region_code}
+							<option selected value={region.region_code}>{region.region_code}</option>
+						{:else}
+							<option value={region.region_code}>{region.region_code}</option>
+						{/if}
+						
+					{/each}
+				{/if}
 			</Select>
 		</Label>
 
@@ -220,6 +258,18 @@
 			</div>
 		</Label>
 
+		{#each ppir_form_initial_columns as ppir_col}
+			<Label class="space-y-2">
+				<span>{ppir_col.replaceAll('_',' ')}</span>
+				<Input
+					name="title"
+					class="border font-normal outline-none"
+					placeholder="Type {ppir_col.replaceAll('_',' ')}"
+					bind:value={ppir_form[ppir_col]}
+				/>
+			</Label>
+		{/each}
+
 		{#if selected_task}
 			<Label class="space-y-2">
 				<span>PPIR Form</span>
@@ -278,7 +328,7 @@
 						assignee: selected_user ? selected_user.id : null,
 						status: status,
 						task_type: 'ppir'
-					});
+					}, ppir_form);
 
 					if (success) {
 						hidden = true;
