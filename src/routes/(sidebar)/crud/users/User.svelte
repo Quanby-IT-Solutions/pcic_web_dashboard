@@ -45,6 +45,7 @@
 
 	let loggedInUser: any = null;
 	let showErrorModal = false;
+	let hasError = false;
 
 	onMount(async () => {
 		const {
@@ -98,7 +99,6 @@
 
 	async function fetchRegions() {
 		try {
-			console.log('Fetching regions...');
 			const { data: regionsData, error } = await supabase.from('regions').select('id, region_name');
 
 			if (error) {
@@ -140,6 +140,7 @@
 
 	async function handleSubmit(event: Event) {
 		event.preventDefault();
+		resetErrorState(); // Reset error states before handling the form submission
 
 		if (!isAuthenticated) {
 			showAlertMessage('You must be authenticated to perform this action', 'error');
@@ -260,23 +261,30 @@
 				throw new Error('Failed to insert user data');
 			}
 
+			// Successfully created or updated user
+			hasError = false; // Reset error state
+			showAlertMessage('User created successfully.', 'success');
+			open = false;
+
 			if (!current_user) {
 				dispatch('userAdded', userInsertData);
 			} else {
 				dispatch('userUpdated', userInsertData);
 			}
-			open = false;
-			showAlertMessage('User created successfully.', 'success');
 		} catch (error) {
 			handleError(error);
 		}
 	}
 
+	function resetErrorState() {
+		hasError = false;
+		errorMessage = '';
+		showAlert = false;
+	}
+
 	function closeErrorModal() {
 		showErrorModal = false;
 	}
-
-	let hasError = false;
 
 	function handleError(error: any) {
 		console.error('Error creating user:', error);
