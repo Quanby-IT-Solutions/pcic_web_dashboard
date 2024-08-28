@@ -48,11 +48,15 @@
   }
 
   function initializeMap() {
+    // Detect if the user prefers dark mode
+    const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const mapStyle = isDarkMode ? 'mapbox://styles/mapbox/dark-v10' : 'mapbox://styles/mapbox/light-v10';
+
     if (userLogs.length > 0 && userLogs[0].longlat) {
       const [lat, lng] = userLogs[0].longlat.split(',').map(Number);
       map = new mapboxgl.Map({
         container: 'map',
-        style: 'mapbox://styles/mapbox/dark-v10',
+        style: mapStyle,
         center: [lng, lat],
         zoom: 12,
       });
@@ -86,6 +90,14 @@
     });
   }
 
+  // Listener for theme change to update the map style dynamically
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    if (map) {
+      const newStyle = e.matches ? 'mapbox://styles/mapbox/dark-v10' : 'mapbox://styles/mapbox/light-v10';
+      map.setStyle(newStyle);
+    }
+  });
+
   function goBack() {
     dispatch('back');
   }
@@ -99,8 +111,8 @@
   });
 </script>
 
-<div class="flex flex-col h-screen w-full bg-gray-900 text-white">
-  <div class="p-4 bg-gray-800 flex justify-between items-center">
+<div class="flex flex-col h-screen w-full">
+  <div class="p-4 flex justify-between items-center">
     <button
       class="flex items-center text-blue-400 hover:text-blue-300 transition-colors duration-300"
       on:click={goBack}
@@ -127,7 +139,7 @@
     <div class="flex-grow flex overflow-hidden">
       <div class="w-1/2 overflow-y-auto p-4 custom-scrollbar">
         {#each userLogs as log}
-          <div class="bg-gray-800 rounded-lg p-4 shadow mb-4 transition-all duration-300 hover:bg-gray-700">
+          <div class="rounded-lg p-4 shadow mb-4 transition-all duration-300 hover:bg-gray-700">
             <div class="flex justify-between items-start mb-2">
               <span class="text-sm text-gray-400">
                 {new Date(log.timestamp).toLocaleString('en-US', { 
@@ -141,7 +153,7 @@
               </span>
               {#if log.longlat}
                 <button
-                  class="p-2 bg-blue-600 rounded-full text-white hover:bg-blue-700 transition-colors duration-300"
+                  class="p-2 rounded-full hover:bg-white transition-colors duration-300"
                   on:click={() => updateMapLocation(log.longlat)}
                 >
                   <User size={16} />
@@ -167,8 +179,7 @@
     margin: 0;
     padding: 0;
     overflow: hidden;
-    background-color: #1a202c;
-    color: white;
+    color: gray;
   }
   
   .custom-scrollbar {
