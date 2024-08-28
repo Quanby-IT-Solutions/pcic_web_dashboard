@@ -115,6 +115,7 @@
 		isNational = user?.role == 'National_Admin';
 		await fetchUsers();
 		await fetchTasks();
+		await fetchRegions();
 	});
 
 	const handleConfirmDelete = (event: any) => {
@@ -126,7 +127,34 @@
     currentPage = 1; // Reset to page 1 when changing status filter
     sortFilterTasks();
 };
+	let regions:any[];
+	
+	const fetchRegions = async () => {
+		try {
+			console.log('Fetching regions...');
+			const { data: regionsData, error } = await supabase.from('regions').select('id, region_name, region_code');
 
+			if (error) {
+				console.error('Supabase error when fetching regions:', error);
+				throw error;
+			}
+
+			console.log('Raw regions data:', regionsData);
+
+			regions = regionsData ;
+			console.log('Processed regions:', regions);
+
+			if (regions.length === 0) {
+				console.warn(
+					'No regions fetched from the database. Please check if the regions table has data.'
+				);
+				showToast('Error fetchng regions', 'error');
+			}
+		} catch (error) {
+			console.error('Error fetching regions:', error);
+			showToast('Error fetchng regions', 'error');
+		}
+	}
 
 	const showToast = (message: string, type: 'success' | 'error') => {
 		toastProps = { show: true, message, type };
@@ -305,7 +333,7 @@
 		return true;
 	};
 
-	const upsertTask = async (upsertData: any) => {
+	const upsertTask = async (upsertData: any, row:any = {}) => {
 		const invalidData = Object.keys(upsertData).find(
 			(key) => key != 'id' && (upsertData[key] == null || upsertData[key].trim() == '')
 		);
@@ -313,7 +341,14 @@
 			showToast(`${invalidData.toUpperCase().replaceAll('_', ' ')} is required!`, 'error');
 			return false;
 		}
-		const { data: responseData, error } = await supabase
+
+		if(row['ppir_insuranceid'] == null || row['ppir_assignmentid'] == null){
+			showToast(`PPIR Insurance ID and Assignment ID must be set!`,'error');
+			return false;
+		}
+
+		
+		const { data: taskData, error } = await supabase
 			.from('tasks')
 			.upsert(upsertData)
 			.select(
@@ -323,13 +358,44 @@
                         id,inspector_name
                     )
                 `
-			)
-			.order('task_number', { ascending: true });
+			).single();
 		if (error) {
 			console.log(error);
 			showToast('Error in processing data!', 'error');
 			return false;
 		}
+		
+		const form_response = await supabase
+			.from('ppir_forms')
+			.upsert({
+				task_id: taskData.id,
+				ppir_assignmentid: row['ppir_assignmentid'],
+				ppir_insuranceid: row['ppir_insuranceid'],
+				ppir_farmername: row['ppir_farmername'],
+				ppir_address: row['ppir_address'],
+				ppir_farmertype: row['ppir_farmertype'],
+				ppir_mobileno: row['ppir_mobileno'],
+				ppir_groupname: row['ppir_groupname'],
+				ppir_groupaddress: row['ppir_groupaddress'],
+				ppir_lendername: row['ppir_lendername'],
+				ppir_lenderaddress: row['ppir_lenderaddress'],
+				ppir_cicno: row['ppir_cicno'],
+				ppir_farmloc: row['ppir_farmloc'],
+				ppir_north: row['ppir_north'],
+				ppir_south: row['ppir_south'],
+				ppir_east: row['ppir_east'],
+				ppir_west: row['ppir_west'],
+				ppir_area_aci: row['ppir_area_aci'],
+				ppir_dopds_aci: row['ppir_dopds_aci'],
+				ppir_doptp_aci: row['ppir_doptp_aci'],
+				ppir_svp_aci: row['ppir_svp_aci'],
+			});
+		if(form_response.error){
+			console.log(form_response.error)
+			showToast('Error processing task', 'error');
+			return false;
+		}
+
 		await fetchTasks();
 		if (upsertData.id != null) {
 			showToast('Successfully updated task', 'success');
@@ -547,6 +613,7 @@
 
 			if (!fetched_list.ok) {
 				console.error('Error fetching files:', fetched_list.statusText);
+				showToast('Error fetching files from FTP server, try again later.', 'error')
 				return;
 			}
 
@@ -555,12 +622,21 @@
 			// Iterate over each file
 			for (const file of fileList) {
 				if (file.name.endsWith('.csv')) {
+					const fetchedFile = scannedFiles[file.name];
+					if(fetchedFile){
+						if(fetchedFile.synced.length >= fetchedFile.length){
+							continue;
+						}
+					}	
+					
 					// Check if the file is a CSV
 					console.log(`Processing file: ${file.name}`);
 					scannedFiles[file.name] = {
 						rows: [],
 						synced: [],
-						scanning: true
+						scanning: true,
+						error: false,
+						error_message: null,
 					};
 					const fetched_file = await fetch('/api/get-file', {
 						method: 'POST',
@@ -573,6 +649,10 @@
 					});
 					if (!fetched_file.ok) {
 						console.error('Error fetching file:', fetched_file.statusText);
+						// showToast('Error fetching file: ', 'error')
+						scannedFiles[file.name]['error'] = true;
+						scannedFiles[file.name]['error_message'] = `Error fetching file`;
+						scannedFiles[file.name]['scanning'] = false;
 						continue;
 					}
 					// Download the CSV file
@@ -603,6 +683,9 @@
 							);
 							showToast('System Error: Error checking existence of ppir_form', 'error');
 							scannedFiles[file.name]['rows'] = [row, ...(scannedFiles[file.name]['rows'] ?? [])];
+							scannedFiles[file.name]['error'] = true;
+							scannedFiles[file.name]['error_message'] = `Error checking existence of ppir_form`;
+							scannedFiles[file.name]['scanning'] = false;
 							continue; // Skip to the next row if there's an error
 						}
 
@@ -635,9 +718,13 @@
 			// Iterate over each file
 			for (const file of Object.keys(scannedFiles)) {
 				if (file.endsWith('.csv')) {
+					
 					// Check if the file is a CSV
 					console.log(`Processing file: ${file}`);
 					currentlySyncing = file;
+					if(scannedFiles[file]['error']){
+						continue;
+					}
 					const { data: existingFile, error: fileCheckError } = await supabase
 						.from('file_read')
 						.select('*')
@@ -646,6 +733,7 @@
 
 					if (fileCheckError && fileCheckError.code !== 'PGRST116') {
 						console.error(`Error checking existence of file ${file}:`, fileCheckError);
+						showToast(`Error checking existence of file ${file}`,'error');
 						continue; // Skip to the next file if there's an error
 					}
 					let fileReadId;
@@ -662,6 +750,7 @@
 
 						if (fileReadError) {
 							console.error(`Error inserting data into file_read for ${file}:`, fileReadError);
+							showToast(`Error inserting data into file_read for ${file}`,'error');
 							continue; // Skip to the next file if there's an error
 						}
 
@@ -1386,6 +1475,7 @@
 >
 	<svelte:component
 		this={drawerComponent}
+		{regions}
 		{formView}
 		{users}
 		{markAsComplete}
@@ -1432,6 +1522,8 @@
 					</div>
 					{#if scannedFiles[file].scanning}
 						<div class=" text-sm text-gray-400">Scanning</div>
+					{:else if scannedFiles[file].error}
+						<div class=" text-sm text-red-400">{scannedFiles[file]['error_message']}</div>
 					{:else if scannedFiles[file].rows.length > 0}
 						<div class="text-sm text-orange-400">
 							{scannedFiles[file].synced.length} / {scannedFiles[file].length} synced
@@ -1439,7 +1531,7 @@
 					{:else if currentlySyncing == file}
 						<div class=" text-sm text-green-500">Syncing...</div>
 					{:else}
-						<div class=" text-sm text-green-500">Synced</div>
+						<div class=" text-sm text-green-500"> {scannedFiles[file].length} / {scannedFiles[file].length} Synced</div>
 					{/if}
 				</div>
 			{/each}
@@ -1471,7 +1563,7 @@
 			<Button
 				color="red"
 				class="mr-2"
-				disabled={isScanning || isSyncing}
+				disabled={isScanning || isSyncing || Object.keys(scannedFiles).length <= 0}
 				on:click={async () => {
 					await syncWithFTP();
 				}}
