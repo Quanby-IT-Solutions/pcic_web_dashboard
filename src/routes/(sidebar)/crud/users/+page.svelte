@@ -60,6 +60,12 @@
 		'BARMM'
 	];
 
+	function formatRegionName(regionName: string | null | undefined): string {
+    if (!regionName) return 'N/A';
+    // This regex will match "Region " followed by one or two digits, and remove leading zeros
+    return regionName.replace(/^(Region\s)0*(\d+)$/, (_, prefix, number) => `${prefix}${parseInt(number)}`);
+}
+
 	let toastProps = { show: false, message: '', type: 'success' | 'error' };
 
 	let supabaseReady = false;
@@ -105,52 +111,62 @@
 	}
 
 	async function fetchUsers() {
-		try {
-			console.log('Fetching users...');
-			const { data: fetchedUsers, error } = await supabase
-				.from('users')
-				.select(
-					`   
-                    *,
-                    regions (
-                        region_name
-                    )
-                `
-				)
-				.order('created_at', { ascending: false });
+    try {
+        console.log('Fetching users...');
+        const { data: fetchedUsers, error } = await supabase
+            .from('users')
+            .select(`
+                *,
+                regions (
+                    region_name
+                )
+            `)
+            .order('created_at', { ascending: false });
 
-			if (error) throw error;
+        if (error) throw error;
 
-			console.log('Fetched users data:', fetchedUsers);
-			users = fetchedUsers || [];
-			filterUsers(); // Filter users based on the search query
+        console.log('Fetched users data:', fetchedUsers);
+        users = fetchedUsers || [];
+        users.forEach(user => {
+            console.log(`User ${user.inspector_name} region:`, user.regions?.region_name);
+        });
+        filterUsers();
 
-			if (users.length === 0) {
-				console.log('No users found in the database.');
-			}
-		} catch (error) {
-			console.error('Error fetching users:', error);
-			showToast(
-				'Error fetching users: ' + (error instanceof Error ? error.message : String(error)),
-				'error'
-			);
-		} finally {
-			isLoading = false;
-		}
-	}
+        if (users.length === 0) {
+            console.log('No users found in the database.');
+        }
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        showToast(
+            'Error fetching users: ' + (error instanceof Error ? error.message : String(error)),
+            'error'
+        );
+    } finally {
+        isLoading = false;
+    }
+}
 
 	// Function to filter users based on searchQuery, selectedRole, and selectedRegion
 	function filterUsers() {
-    filteredUsers = users.filter(
-      (user) =>
-        user.inspector_name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        (selectedRole === '' || user.role === selectedRole) &&
-        (loggedInUser.role === 'National_Admin' ? 
-          (selectedRegion === '' || user.regions?.region_name === selectedRegion) :
-          user.regions?.region_name === loggedInUser.regions.region_name)
-    );
+    filteredUsers = users.filter((user) => {
+        const nameMatch = user.inspector_name.toLowerCase().includes(searchQuery.toLowerCase());
+        const roleMatch = selectedRole === '' || user.role === selectedRole;
+        let regionMatch = true;
+
+        if (loggedInUser.role === 'National_Admin') {
+            regionMatch = selectedRegion === '' || 
+                formatRegionName(user.regions?.region_name) === formatRegionName(selectedRegion);
+        } else {
+            regionMatch = formatRegionName(user.regions?.region_name) === 
+                formatRegionName(loggedInUser.regions?.region_name);
+        }
+
+        return nameMatch && roleMatch && regionMatch;
+    });
     paginateUsers();
-  }
+}
+
+
 
 	// Function to paginate users
 	function paginateUsers() {
@@ -253,17 +269,17 @@
 					{/if}
 				</Select>
 				<Select
-				placeholder="Filter by region"
-				class="me-4 w-80 border xl:w-96"
-				bind:value={selectedRegion}
-				on:change={filterUsers}
-				disabled={loggedInUser && loggedInUser.role !== 'National_Admin'}
-				>
-				<option value="">All Regions</option>
-				{#each regions as region}
-					<option value={region}>{region}</option>
-				{/each}
-				</Select>
+    placeholder="Filter by region"
+    class="me-4 w-80 border xl:w-96"
+    bind:value={selectedRegion}
+    on:change={filterUsers}
+    disabled={loggedInUser && loggedInUser.role !== 'National_Admin'}
+>
+    <option value="">All Regions</option>
+    {#each regions as region}
+        <option value={region}>{formatRegionName(region)}</option>
+    {/each}
+</Select>
 			</div>
 
 			<Button
@@ -318,82 +334,83 @@
 			<!-- Table container with a fixed height -->
 			<div class="flex-grow overflow-x-auto">
 				<Table class="select-none h-full">
-				<TableHead class="sticky top-0 border-y border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700">
-
-					<TableHeadCell class="w-4 p-4"></TableHeadCell>
-					{#each ['Name', 'Status', 'Date Added', 'Role', 'Region', 'Actions'] as title, index}
+					<TableHead class="sticky top-0 border-y border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700">
+					  <TableHeadCell class="w-4 p-4"></TableHeadCell>
+					  {#each ['Name', 'Status', 'Date Added', 'Role', 'Region', 'Actions'] as title, index}
 						<TableHeadCell
-							class="p-4 font-medium text-gray-900 dark:text-gray-300 {index > 0
-								? 'text-center'
-								: ''}"
+						  class="p-4 font-medium text-gray-900 dark:text-white {index > 0
+							? 'text-center'
+							: ''}"
 						>
-							{title}
+						  {title}
 						</TableHeadCell>
-					{/each}
-				</TableHead>
-				<TableBody class="h-full" style="max-height: 40rem; overflow-y: auto;">
-					{#each paginatedUsers as user}
-					<TableBodyRow class="text-base hover:bg-gray-100 dark:hover:bg-gray-800">
+					  {/each}
+					</TableHead>
+					<TableBody class="h-full" style="max-height: 40rem; overflow-y: auto;">
+					  {#each paginatedUsers as user}
+					  <TableBodyRow class="text-base hover:bg-gray-100 dark:hover:bg-gray-800">
 						<TableBodyCell class="w-4 p-4"></TableBodyCell>
-							<TableBodyCell class="mr-12 flex items-center space-x-6 whitespace-nowrap p-4">
-								<Avatar
-									src={user.photo_url || imagesPath('default-avatar.png', 'users')}
-									alt="User avatar"
-									class="h-10 w-10 rounded-full"
-								/>
-								<div class="text-sm font-normal text-gray-500 dark:text-gray-400">
-									<div class="text-base font-semibold text-gray-900 dark:text-white">
-										{user.inspector_name}
-									</div>
-									<div class="text-sm font-normal text-gray-500 dark:text-gray-400">
-										{user.email}
-									</div>
-								</div>
-							</TableBodyCell>
-							<TableBodyCell class="p-4 text-center">
-								<span class="flex items-center justify-center">
-									<span
-										class={`h-2.5 w-2.5 rounded-full bg-${getStatusColor(user.is_online)}-500 mr-2`}
-									></span>
-									<span class={`text-sm font-medium text-${getStatusColor(user.is_online)}-500`}>
-										{getStatusText(user.is_online)}
-									</span>
-								</span>
-							</TableBodyCell>
-							<TableBodyCell class="p-4 text-center">
-								{new Date(user.created_at).toLocaleDateString()}
-							</TableBodyCell>
-							<TableBodyCell class="p-4 text-center">{user.role}</TableBodyCell>
-							<TableBodyCell class="p-4 text-center"
-								>{user.regions?.region_name || 'N/A'}</TableBodyCell
-							>
-							<TableBodyCell class="flex items-center justify-center space-x-2 p-4">
-								<Button
-									size="sm"
-									class="gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-									on:click={() => {
-										current_user = user;
-										openUser = true;
-									}}
-								>
-									<EditOutline size="sm" /> Edit user
-								</Button>
-								<Button
-									color="red"
-									size="sm"
-									class="gap-2 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400"
-									on:click={() => {
-										userToDelete = user.id;
-										openDelete = true;
-									}}
-								>
-									<TrashBinSolid size="sm" /> Delete user
-								</Button>
-							</TableBodyCell>
-						</TableBodyRow>
-					{/each}
-				</TableBody>
-			</Table>
+						  <TableBodyCell class="mr-12 flex items-center space-x-6 whitespace-nowrap p-4">
+							<Avatar
+							  src={user.photo_url || imagesPath('default-avatar.png', 'users')}
+							  alt="User avatar"
+							  class="h-10 w-10 rounded-full"
+							/>
+							<div class="text-sm font-normal text-gray-500 dark:text-gray-400">
+							  <div class="text-base font-semibold text-gray-900 dark:text-white">
+								{user.inspector_name}
+							  </div>
+							  <div class="text-sm font-normal text-gray-500 dark:text-gray-400">
+								{user.email}
+							  </div>
+							</div>
+						  </TableBodyCell>
+						  <TableBodyCell class="p-4 text-center">
+							<span class="flex items-center justify-center">
+							  <span
+								class={`h-2.5 w-2.5 rounded-full bg-${getStatusColor(user.is_online)}-500 mr-2`}
+							  ></span>
+<span class={`text-sm font-medium text-${getStatusColor(user.is_online)}-500`}>
+              {getStatusText(user.is_online)}
+            </span>
+          </span>
+        </TableBodyCell>
+        <TableBodyCell class="p-4 text-center text-base text-gray-900 dark:text-gray-300">
+          {new Date(user.created_at).toLocaleDateString()}
+        </TableBodyCell>
+        <TableBodyCell class="p-4 text-center text-base text-gray-900 dark:text-gray-300">
+          {user.role}
+        </TableBodyCell>
+		<TableBodyCell class="p-4 text-center text-base text-gray-900 dark:text-gray-300">
+			{formatRegionName(user.regions?.region_name)}
+		</TableBodyCell>
+        <TableBodyCell class="flex items-center justify-center space-x-2 p-4">
+          <Button
+            size="sm"
+            class="gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            on:click={() => {
+              current_user = user;
+              openUser = true;
+            }}
+          >
+            <EditOutline size="sm" /> Edit user
+          </Button>
+          <Button
+            color="red"
+            size="sm"
+            class="gap-2 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400"
+            on:click={() => {
+              userToDelete = user.id;
+              openDelete = true;
+            }}
+          >
+            <TrashBinSolid size="sm" /> Delete user
+          </Button>
+        </TableBodyCell>
+      </TableBodyRow>
+    {/each}
+  </TableBody>
+</Table>
 		</div>
 		<!-- Pagination and buttons below the table items -->
 		<div>
