@@ -1538,7 +1538,7 @@
 			<Button
 				color="red"
 				class="mr-2"
-				disabled={isScanning || isSyncing}
+				disabled={isScanning || isSyncing || Object.keys(scannedFiles).length <= 0}
 				on:click={async () => {
 					await syncWithFTP();
 				}}
