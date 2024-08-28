@@ -622,9 +622,13 @@
 			// Iterate over each file
 			for (const file of fileList) {
 				if (file.name.endsWith('.csv')) {
-					if(scannedFiles[file.name]?.synced.length >= scannedFiles[file.name].length){
-						continue;
-					}
+					const fetchedFile = scannedFiles[file.name];
+					if(fetchedFile){
+						if(fetchedFile.synced.length >= fetchedFile.length){
+							continue;
+						}
+					}	
+					
 					// Check if the file is a CSV
 					console.log(`Processing file: ${file.name}`);
 					scannedFiles[file.name] = {
