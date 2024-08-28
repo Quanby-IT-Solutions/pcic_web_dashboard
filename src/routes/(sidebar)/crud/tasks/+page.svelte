@@ -613,6 +613,7 @@
 
 			if (!fetched_list.ok) {
 				console.error('Error fetching files:', fetched_list.statusText);
+				showToast('Error fetching files from FTP server, try again later.', 'error')
 				return;
 			}
 
@@ -644,6 +645,7 @@
 					});
 					if (!fetched_file.ok) {
 						console.error('Error fetching file:', fetched_file.statusText);
+						// showToast('Error fetching file: ', 'error')
 						scannedFiles[file.name]['error'] = true;
 						scannedFiles[file.name]['error_message'] = `Error fetching file`;
 						scannedFiles[file.name]['scanning'] = false;
