@@ -77,7 +77,7 @@
 				// Prefill role and region if logged-in user is a Regional_Admin and creating a new user
 				if (loggedInUser.role === 'Regional_Admin' && !current_user) {
 					selectedRole = 'Agent';
-					selectedRegionId = loggedInUser.region_id; // Set to the same region as the Regional_Admin
+					selectedRegionId = regions.find(region => region.region_name === 'Region 5')?.id || '';
 				}
 			}
 		}
@@ -113,6 +113,11 @@
 			}
 
 			regions = regionsData as Region[];
+
+			// Set default region to Region 5 for Regional_Admin
+			if (loggedInUser?.role === 'Regional_Admin' && !current_user) {
+				selectedRegionId = regions.find(region => region.region_name === 'Region 5')?.id || '';
+			}
 		} catch (error) {
 			console.error('Error fetching regions:', error);
 			errorMessage =
