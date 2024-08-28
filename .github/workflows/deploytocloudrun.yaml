@@ -1,40 +1,64 @@
-name: Deploy to Cloud Run
-
+name: Build and Deploy to Cloud Run
 on:
   workflow_dispatch:
-
+env:
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  GAR_LOCATION: ${{ vars.GAR_LOCATION }}
+  REPOSITORY: ${{ vars.GAR_REPOSITORY }}
+  SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}
+  REGION: ${{ vars.GCP_REGION }}
 jobs:
   deploy:
+    permissions:
+      contents: 'read'
+      id-token: 'write'
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v1
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Google Auth
+        id: auth
+        uses: 'google-github-actions/auth@v0'
         with:
-          version: 'latest'
-          project_id: ${{ secrets.GCLOUD_PROJECT_ID }}
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
-
-      - name: Build and push container image
-        run: |
-          gcloud builds submit --tag gcr.io/${{ secrets.PROJECT_ID }}/pcic_web_dashboard \
-          --build-arg PUBLIC_SUPABASE_URL=${{ secrets.PUBLIC_SUPABASE_URL }} \
-          --build-arg PUBLIC_SUPABASE_ANON_KEY=${{ secrets.PUBLIC_SUPABASE_ANON_KEY }} \
-          --build-arg ANALYTICS_ID=${{ secrets.ANALYTICS_ID }} \
-          --build-arg VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }} \
-          --build-arg VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }} \
-          --build-arg FTP_HOST=${{ secrets.FTP_HOST }} \
-          --build-arg FTP_PORT=${{ secrets.FTP_PORT }} \
-          --build-arg FTP_USER=${{ secrets.FTP_USER }} \
-          --build-arg FTP_PASSWORD=${{ secrets.FTP_PASSWORD }}
-
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+          token_format: 'access_token'
+      - name: Docker Auth
+        id: docker-auth
+        uses: 'docker/login-action@v1'
+        with:
+          username: 'oauth2accesstoken'
+          password: '${{ steps.auth.outputs.access_token }}'
+          registry: '${{ env.GAR_LOCATION }}-docker.pkg.dev'
+      - name: Build and Push Container
+        env:
+          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
+          PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
+          ANALYTICS_ID: ${{ secrets.ANALYTICS_ID }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_PORT: ${{ secrets.FTP_PORT }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: |-
+          docker build \
+            --build-arg PUBLIC_SUPABASE_URL=${PUBLIC_SUPABASE_URL} \
+            --build-arg PUBLIC_SUPABASE_ANON_KEY=${PUBLIC_SUPABASE_ANON_KEY} \
+            --build-arg ANALYTICS_ID=${ANALYTICS_ID} \
+            --build-arg VITE_SUPABASE_URL=${VITE_SUPABASE_URL} \
+            --build-arg VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY} \
+            --build-arg FTP_HOST=${FTP_HOST} \
+            --build-arg FTP_PORT=${FTP_PORT} \
+            --build-arg FTP_USER=${FTP_USER} \
+            --build-arg FTP_PASSWORD=${FTP_PASSWORD} \
+            -t "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE }}:${{ github.sha }}" ./
+          docker push "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE }}:${{ github.sha }}"
       - name: Deploy to Cloud Run
-        run: |
-          gcloud run deploy ${{ secrets.CLOUD_RUN_SERVICE }} \
-            --image gcr.io/${{ secrets.GCLOUD_PROJECT_ID }}/pcic_web_dashboard \
-            --region ${{ secrets.REGION }} \
-            --platform managed \
-            --allow-unauthenticated
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v0
+        with:
+          service: ${{ env.SERVICE }}
+          region: ${{ env.REGION }}
+          image: ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE }}:${{ github.sha }}
+      - name: Show Output
+        run: echo ${{ steps.deploy.outputs.url }}
