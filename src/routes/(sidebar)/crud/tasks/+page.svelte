@@ -626,7 +626,9 @@
 					scannedFiles[file.name] = {
 						rows: [],
 						synced: [],
-						scanning: true
+						scanning: true,
+						error: false,
+						error_message: null,
 					};
 					const fetched_file = await fetch('/api/get-file', {
 						method: 'POST',
@@ -639,6 +641,9 @@
 					});
 					if (!fetched_file.ok) {
 						console.error('Error fetching file:', fetched_file.statusText);
+						scannedFiles[file.name]['error'] = true;
+						scannedFiles[file.name]['error_message'] = `Error fetching file`;
+						scannedFiles[file.name]['scanning'] = false;
 						continue;
 					}
 					// Download the CSV file
@@ -669,6 +674,9 @@
 							);
 							showToast('System Error: Error checking existence of ppir_form', 'error');
 							scannedFiles[file.name]['rows'] = [row, ...(scannedFiles[file.name]['rows'] ?? [])];
+							scannedFiles[file.name]['error'] = true;
+							scannedFiles[file.name]['error_message'] = `Error checking existence of ppir_form`;
+							scannedFiles[file.name]['scanning'] = false;
 							continue; // Skip to the next row if there's an error
 						}
 
@@ -701,9 +709,13 @@
 			// Iterate over each file
 			for (const file of Object.keys(scannedFiles)) {
 				if (file.endsWith('.csv')) {
+					
 					// Check if the file is a CSV
 					console.log(`Processing file: ${file}`);
 					currentlySyncing = file;
+					if(scannedFiles[file]['error']){
+						continue;
+					}
 					const { data: existingFile, error: fileCheckError } = await supabase
 						.from('file_read')
 						.select('*')
@@ -712,6 +724,7 @@
 
 					if (fileCheckError && fileCheckError.code !== 'PGRST116') {
 						console.error(`Error checking existence of file ${file}:`, fileCheckError);
+						showToast(`Error checking existence of file ${file}`,'error');
 						continue; // Skip to the next file if there's an error
 					}
 					let fileReadId;
@@ -728,6 +741,7 @@
 
 						if (fileReadError) {
 							console.error(`Error inserting data into file_read for ${file}:`, fileReadError);
+							showToast(`Error inserting data into file_read for ${file}`,'error');
 							continue; // Skip to the next file if there's an error
 						}
 
@@ -1499,6 +1513,8 @@
 					</div>
 					{#if scannedFiles[file].scanning}
 						<div class=" text-sm text-gray-400">Scanning</div>
+					{:else if scannedFiles[file].error}
+						<div class=" text-sm text-red-400">{scannedFiles[file]['error_message']}</div>
 					{:else if scannedFiles[file].rows.length > 0}
 						<div class="text-sm text-orange-400">
 							{scannedFiles[file].synced.length} / {scannedFiles[file].length} synced
@@ -1506,7 +1522,7 @@
 					{:else if currentlySyncing == file}
 						<div class=" text-sm text-green-500">Syncing...</div>
 					{:else}
-						<div class=" text-sm text-green-500">Synced</div>
+						<div class=" text-sm text-green-500"> {scannedFiles[file].length} / {scannedFiles[file].length} Synced</div>
 					{/if}
 				</div>
 			{/each}
