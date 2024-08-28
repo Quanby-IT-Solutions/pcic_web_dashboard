@@ -31,7 +31,7 @@
 	let alertMessage = '';
 	let alertType: 'success' | 'error' | 'warning' | 'info' = 'info';
 
-	export let selectedRegionId: string | null;
+	export let selectedRegionId: string | null = null;
 	export let current_user: any = null;
 	let selectedRole = '';
 
@@ -73,6 +73,12 @@
 				console.error('Error fetching user data:', userError);
 			} else {
 				loggedInUser = userData;
+
+				// Prefill role and region if logged-in user is a Regional_Admin and creating a new user
+				if (loggedInUser.role === 'Regional_Admin' && !current_user) {
+					selectedRole = 'Agent';
+					selectedRegionId = regions.find(region => region.region_name === 'Region 5')?.id || '';
+				}
 			}
 		}
 	});
@@ -107,6 +113,11 @@
 			}
 
 			regions = regionsData as Region[];
+
+			// Set default region to Region 5 for Regional_Admin
+			if (loggedInUser?.role === 'Regional_Admin' && !current_user) {
+				selectedRegionId = regions.find(region => region.region_name === 'Region 5')?.id || '';
+			}
 		} catch (error) {
 			console.error('Error fetching regions:', error);
 			errorMessage =
@@ -407,7 +418,6 @@
 							bind:value={selectedRole}
 							on:change={handleRoleChange}
 							required
-							disabled={!getAllowedRoles().length}
 						>
 							<option value="">Select a role</option>
 							{#each getAllowedRoles() as role}
@@ -417,7 +427,12 @@
 					</Label>
 					<Label class="col-span-6 space-y-2">
 						<span>Region</span>
-						<Select name="region_id" class="mt-2" required bind:value={selectedRegionId}>
+						<Select 
+							name="region_id" 
+							class="mt-2" 
+							required 
+							bind:value={selectedRegionId}
+						>
 							<option value="">Select a region</option>
 							{#each regions as region}
 								<option value={region.id}>{region.region_name}</option>
