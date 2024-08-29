@@ -59,6 +59,14 @@
 		'ppir_svp_aci',
 	];
 
+	const ppir_form_fields = [
+        'ppir_svp_act', 'ppir_variety',
+        'ppir_stagecrop', 'ppir_remarks', 'ppir_name_insured',
+        'ppir_name_iuia', 'ppir_sig_insured', 'ppir_sig_iuia',
+        'ppir_att_1', 'ppir_att_2', 'ppir_att_3', 'ppir_att_4'
+    ];
+
+
 	onMount(() => {
 		if (selected_task) {
 			selected_user = users.find((user) => user.id == selected_task.users.id) || null;
@@ -71,6 +79,24 @@
 
 		console.log(formView);
 	});
+
+	let editPPIRFormOpen = false;
+    
+    const openEditPPIRForm = () => {
+        editPPIRFormOpen = true;
+    };
+
+    const savePPIRForm = () => {
+        // Here you would typically save the changes to your backend
+        // For now, we'll just close the modal
+        editPPIRFormOpen = false;
+    };
+
+    // Function to handle null values
+    const handleNullValue = (value: any) => {
+        return value === null || value === undefined || value === '' ? null : value;
+    };
+
 
 	let selected_user: any = null;
 
@@ -271,26 +297,31 @@
 		{/each}
 
 		{#if selected_task}
-			<Label class="space-y-2">
-				<span>PPIR Form</span>
-				<Button
-					color="green"
-					on:click={() => {
-						open = true;
-						viewForm = true;
-					}}
-					class="mb-2 w-full">View Form</Button
-				>
-				<Button
-					on:click={() => {
-						open = true;
-						viewForm = false;
-						completeWarning = false;
-					}}
-					color="red"
-					class="mb-2 w-full">Clear Form</Button
-				>
-			</Label>
+		<Label class="space-y-2">
+			<span>PPIR Form</span>
+			<Button
+				color="green"
+				on:click={() => {
+					open = true;
+					viewForm = true;
+				}}
+				class="mb-2 w-full">View Form</Button
+			>
+			<Button
+				color="blue"
+				on:click={openEditPPIRForm}
+				class="mb-2 w-full">Edit PPIR Form</Button
+			>
+			<Button
+				on:click={() => {
+					open = true;
+					viewForm = false;
+					completeWarning = false;
+				}}
+				color="red"
+				class="mb-2 w-full">Clear Form</Button
+			>
+		</Label>
 
 			<!-- {#if selected_task.status != 'completed'} -->
 			<Label class="space-y-2">
@@ -402,3 +433,45 @@
 		{/each}
 	</div>
 </Modal>
+
+
+<!-- Add this new Modal for editing PPIR form -->
+<Modal bind:open={editPPIRFormOpen} size="xl">
+    <h3 class="mb-4 text-xl font-medium text-gray-900 dark:text-white">Edit PPIR Form</h3>
+    <form on:submit|preventDefault={savePPIRForm} class="space-y-4 max-h-[70vh] overflow-y-auto">
+        {#each ppir_form_fields as field}
+            <Label class="block">
+                <span class="text-gray-700">{field.replaceAll('_', ' ').toUpperCase()}</span>
+                {#if field === 'ppir_remarks'}
+                    <Textarea
+                        name={field}
+                        bind:value={ppir_form[field]}
+                        placeholder={field.replaceAll('_', ' ')}
+                        class="mt-1 w-full"
+                        rows="3"
+                    />
+                {:else if field.startsWith('ppir_sig_')}
+                    <p class="text-sm text-gray-500">Signature cannot be edited here</p>
+                {:else if field.startsWith('ppir_att_')}
+                    <p class="text-sm text-gray-500">Attachment cannot be edited here</p>
+                {:else}
+                    <Input
+                        type="text"
+                        name={field}
+                        bind:value={ppir_form[field]}
+                        placeholder={field.replaceAll('_', ' ')}
+                        class="mt-1 w-full"
+                    />
+                {/if}
+            </Label>
+        {/each}
+        <div class="mt-4 flex justify-end space-x-2">
+            <Button type="submit">Save Changes</Button>
+            <Button color="alternative" on:click={() => editPPIRFormOpen = false}>Cancel</Button>
+        </div>
+    </form>
+</Modal>
+
+{#if selected_task && selected_task.ppir_forms}
+    <p>{handleNullValue(selected_task.ppir_forms.ppir_assignmentid)}</p>
+{/if}
