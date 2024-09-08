@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { Button, Card, Checkbox, P } from 'flowbite-svelte';
 	import { LockOpenSolid } from 'flowbite-svelte-icons';
+	import logo from '$lib/assets/pcic.svg';
 	export let site = {
 		name: 'Flowbite',
-		img: 'https://commons.wikimedia.org/wiki/File:Philippine_Crop_Insurance_Corporation_(PCIC).svg',
+		img: logo,
 		link: '/',
 		imgAlt: 'PCIC Logo'
 	};
@@ -32,13 +33,13 @@
 <main class={mainClass}>
 	<div class={mainDivClass}>
 		<a href={site.link} class={siteLinkClass}>
-			<img src={site.img} class={siteImgClass} alt={site.imgAlt} />
+			<enhanced:img src={site.img} class={siteImgClass} alt={site.imgAlt} />
 			<span>{site.name}</span>
 		</a>
 		<!-- Card -->
 		<Card class="w-full max-w-md" border={false}>
 			<div class={cardDiv3Class}>
-				<img class={userImgClass} src={user.img} alt={user.imgAlt} />
+				<enhanced:img class={userImgClass} src={user.img} alt={user.imgAlt} />
 				<h1 class={cardH1Class}>{user.name}</h1>
 			</div>
 			<P class="text-base font-normal text-gray-500 dark:text-gray-400">
@@ -68,7 +69,7 @@
 ## Props
 @prop export let site = {
 		name: 'Flowbite',
-		img: '/images/Philippine_Crop_Insurance_Corporation_(PCIC).svg',
+		img: '/images/pcic.svg',
 		link: '/',
 		imgAlt: 'PCIC Logo'
 	};

@@ -8,8 +8,22 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "cSpell.words": [
+    "cicno",
+    "dopds",
+    "doptp",
     "Dribbble",
+    "farmername",
+    "farmertype",
+    "farmloc",
     "flowbite",
-    "fordispatch"
+    "fordispatch",
+    "halign",
+    "insuranceid",
+    "lenderaddress",
+    "lendername",
+    "linebreak",
+    "mobileno",
+    "papaparse",
+    "sortings"
   ]
 }

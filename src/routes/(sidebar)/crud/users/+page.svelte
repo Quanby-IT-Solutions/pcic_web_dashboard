@@ -1,25 +1,14 @@
 <script lang="ts">
+	import no_user from '$lib/assets/no-user.png';
+	import spinner from '$lib/assets/pcic-spinner.gif';
 	import { onMount } from 'svelte';
-	import {
-		Avatar,
-		Button,
-		Checkbox,
-		Heading,
-		Input,
-		Select,
-		Table,
-		TableBody,
-		TableBodyCell,
-		TableBodyRow,
-		TableHead,
-		TableHeadCell
-	} from 'flowbite-svelte';
-	import { EditOutline, PlusOutline, TrashBinSolid } from 'flowbite-svelte-icons';
-	import { imagesPath } from '../../../utils/variables';
+	import { Button, Heading, Input, Select } from 'flowbite-svelte';
+	import { PlusOutline } from 'flowbite-svelte-icons';
 	import User from './User.svelte';
 	import Delete from './Delete.svelte';
 	import Toast from '../../../utils/widgets/Toast.svelte';
 	import MetaTag from '../../../utils/MetaTag.svelte';
+	import UserList from './UserList.svelte';
 
 	export let data;
 	$: ({ supabase } = data);
@@ -61,114 +50,125 @@
 	];
 
 	function formatRegionName(regionName: string | null | undefined): string {
-    if (!regionName) return 'N/A';
-    // This regex will match "Region " followed by one or two digits, and remove leading zeros
-    return regionName.replace(/^(Region\s)0*(\d+)$/, (_, prefix, number) => `${prefix}${parseInt(number)}`);
-}
+		if (!regionName) return 'N/A';
+		return regionName.replace(
+			/^(Region\s)0*(\d+)$/,
+			(_, prefix, number) => `${prefix}${parseInt(number)}`
+		);
+	}
 
-	let toastProps = { show: false, message: '', type: 'success' | 'error' };
+	let toastProps: {
+		show: boolean;
+		message: string;
+		type: 'success' | 'error' | 'info' | 'warning';
+	} = {
+		show: false,
+		message: '',
+		type: 'success'
+	};
 
 	let supabaseReady = false;
 
-	// Pagination variables
 	let currentPage = 1;
 	let itemsPerPage = 10;
 	let paginatedUsers: any[] = [];
 
 	onMount(async () => {
-    if (supabase) {
-      supabaseReady = true;
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await fetchLoggedInUserInfo(user.id);
-        await fetchUsers();
-      } else {
-        console.error('No authenticated user found');
-      }
-    } else {
-      console.error('Supabase client is not available');
-    }
-  });
-
-		async function fetchLoggedInUserInfo(userId: string) {
-		try {
-		const { data: userInfo, error } = await supabase
-			.from('users')
-			.select('*, regions(region_name)')
-			.eq('id', userId)
-			.single();
-
-		if (error) throw error;
-
-		loggedInUser = userInfo;
-		if (loggedInUser.role !== 'National_Admin') {
-			selectedRegion = loggedInUser.regions.region_name;
+		if (supabase) {
+			supabaseReady = true;
+			const {
+				data: { user }
+			} = await supabase.auth.getUser();
+			if (user) {
+				await fetchLoggedInUserInfo(user.id);
+				await fetchUsers();
+			} else {
+				console.error('No authenticated user found');
+			}
+		} else {
+			console.error('Supabase client is not available');
 		}
+	});
+
+	async function fetchLoggedInUserInfo(userId: string) {
+		try {
+			const { data: userInfo, error } = await supabase
+				.from('users')
+				.select('*, regions(region_name)')
+				.eq('id', userId)
+				.single();
+
+			if (error) throw error;
+
+			loggedInUser = userInfo;
+			if (loggedInUser.role !== 'National_Admin') {
+				selectedRegion = loggedInUser.regions.region_name;
+			}
 		} catch (error) {
-		console.error('Error fetching logged-in user info:', error);
-		showToast('Error fetching user information', 'error');
+			console.error('Error fetching logged-in user info:', error);
+			showToast('Error fetching user information', 'error');
 		}
 	}
 
 	async function fetchUsers() {
-    try {
-        console.log('Fetching users...');
-        const { data: fetchedUsers, error } = await supabase
-            .from('users')
-            .select(`
+		try {
+			console.log('Fetching users...');
+			const { data: fetchedUsers, error } = await supabase
+				.from('users')
+				.select(
+					`
                 *,
                 regions (
                     region_name
                 )
-            `)
-            .order('created_at', { ascending: false });
+            `
+				)
+				.order('created_at', { ascending: false });
 
-        if (error) throw error;
+			if (error) throw error;
 
-        console.log('Fetched users data:', fetchedUsers);
-        users = fetchedUsers || [];
-        users.forEach(user => {
-            console.log(`User ${user.inspector_name} region:`, user.regions?.region_name);
-        });
-        filterUsers();
+			console.log('Fetched users data:', fetchedUsers);
+			users = fetchedUsers || [];
+			users.forEach((user) => {
+				console.log(`User ${user.inspector_name} region:`, user.regions?.region_name);
+			});
+			filterUsers();
 
-        if (users.length === 0) {
-            console.log('No users found in the database.');
-        }
-    } catch (error) {
-        console.error('Error fetching users:', error);
-        showToast(
-            'Error fetching users: ' + (error instanceof Error ? error.message : String(error)),
-            'error'
-        );
-    } finally {
-        isLoading = false;
-    }
-}
+			if (users.length === 0) {
+				console.log('No users found in the database.');
+			}
+		} catch (error) {
+			console.error('Error fetching users:', error);
+			showToast(
+				'Error fetching users: ' + (error instanceof Error ? error.message : String(error)),
+				'error'
+			);
+		} finally {
+			isLoading = false;
+		}
+	}
 
-	// Function to filter users based on searchQuery, selectedRole, and selectedRegion
 	function filterUsers() {
-    filteredUsers = users.filter((user) => {
-        const nameMatch = user.inspector_name.toLowerCase().includes(searchQuery.toLowerCase());
-        const roleMatch = selectedRole === '' || user.role === selectedRole;
-        let regionMatch = true;
+		filteredUsers = users.filter((user) => {
+			const nameMatch = user.inspector_name.toLowerCase().includes(searchQuery.toLowerCase());
+			const roleMatch = selectedRole === '' || user.role === selectedRole;
+			let regionMatch = true;
 
-        if (loggedInUser.role === 'National_Admin') {
-            regionMatch = selectedRegion === '' || 
-                formatRegionName(user.regions?.region_name) === formatRegionName(selectedRegion);
-        } else {
-            regionMatch = formatRegionName(user.regions?.region_name) === 
-                formatRegionName(loggedInUser.regions?.region_name);
-        }
+			if (loggedInUser.role === 'National_Admin') {
+				regionMatch =
+					selectedRegion === '' ||
+					formatRegionName(user.regions?.region_name) === formatRegionName(selectedRegion);
+			} else {
+				regionMatch =
+					formatRegionName(user.regions?.region_name) ===
+					formatRegionName(loggedInUser.regions?.region_name);
+			}
 
-        return nameMatch && roleMatch && regionMatch;
-    });
-    paginateUsers();
-}
+			return nameMatch && roleMatch && regionMatch;
+		});
+		paginateUsers();
+	}
 
-
-
-	// Function to paginate users
 	function paginateUsers() {
 		const startIndex = (currentPage - 1) * itemsPerPage;
 		const endIndex = startIndex + itemsPerPage;
@@ -191,37 +191,29 @@
 
 	function handleUserAdded(event: CustomEvent) {
 		users = [event.detail, ...users];
-		filterUsers(); // Re-filter users after adding a new one
+		filterUsers();
 		showToast('User added successfully', 'success');
 	}
 
 	function handleUserUpdated(event: CustomEvent) {
 		const updatedUser = event.detail;
 		users = users.map((user) => (user.id === updatedUser.id ? updatedUser : user));
-		filterUsers(); // Re-filter users after updating one
+		filterUsers();
 		showToast('User updated successfully', 'success');
 	}
 
 	function handleUserDeleted(event: CustomEvent) {
 		const deletedUserId = event.detail;
 		users = users.filter((user) => user.id !== deletedUserId);
-		filterUsers(); // Re-filter users after deleting one
+		filterUsers();
 		showToast('User deleted successfully', 'success');
 	}
 
-	function showToast(message: string, type: 'success' | 'error') {
+	function showToast(message: string, type: 'success' | 'error' | 'info' | 'warning') {
 		toastProps = { show: true, message, type };
 		setTimeout(() => {
 			toastProps = { ...toastProps, show: false };
 		}, 3000);
-	}
-
-	function getStatusColor(is_online: boolean) {
-		return is_online ? 'green' : 'gray';
-	}
-
-	function getStatusText(is_online: boolean) {
-		return is_online ? 'Online' : 'Offline';
 	}
 
 	function handleOpenUser() {
@@ -232,6 +224,16 @@
 			console.error('Supabase client is not ready');
 			showToast('Unable to open user form. Please try again later.', 'error');
 		}
+	}
+
+	function handleEditUser(user: any) {
+		current_user = user;
+		openUser = true;
+	}
+
+	function handleDeleteUser(userId: string) {
+		userToDelete = userId;
+		openDelete = true;
 	}
 </script>
 
@@ -269,17 +271,17 @@
 					{/if}
 				</Select>
 				<Select
-    placeholder="Filter by region"
-    class="me-4 w-80 border xl:w-96"
-    bind:value={selectedRegion}
-    on:change={filterUsers}
-    disabled={loggedInUser && loggedInUser.role !== 'National_Admin'}
->
-    <option value="">All Regions</option>
-    {#each regions as region}
-        <option value={region}>{formatRegionName(region)}</option>
-    {/each}
-</Select>
+					placeholder="Filter by region"
+					class="me-4 w-80 border xl:w-96"
+					bind:value={selectedRegion}
+					on:change={filterUsers}
+					disabled={loggedInUser && loggedInUser.role !== 'National_Admin'}
+				>
+					<option value="">All Regions</option>
+					{#each regions as region}
+						<option value={region}>{formatRegionName(region)}</option>
+					{/each}
+				</Select>
 			</div>
 
 			<Button
@@ -293,132 +295,47 @@
 
 		{#if isLoading}
 			<div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-50">
-				<img src="/images/pcic-spinner.gif" alt="Loading..." class="h-1/2 w-1/3" />
+				<img src={spinner} alt="Loading..." class="h-1/2 w-1/3" />
 			</div>
 		{:else if paginatedUsers.length === 0}
-		<div
-		class="mt-1 rounded-lg border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-700 dark:bg-gray-800"
-	>
-		<div class="flex flex-col items-center gap-8 md:flex-row">
-			<div class="flex w-full items-center justify-center md:w-1/2">
-				<img src="/no-user.png" alt="No users illustration" class="h-1/2 w-1/2" />
+			<div
+				class="mt-1 rounded-lg border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-700 dark:bg-gray-800"
+			>
+				<div class="flex flex-col items-center gap-8 md:flex-row">
+					<div class="flex w-full items-center justify-center md:w-1/2">
+						<img src={no_user} alt="No users illustration" class="h-1/2 w-1/2" />
+					</div>
+					<div class="w-full md:w-1/2">
+						<h2 class="mb-4 text-2xl font-bold text-gray-900 dark:text-white">No users found</h2>
+						<p class="mb-6 text-gray-600 dark:text-gray-300">
+							Your user database is currently empty. Let's get started by creating your user
+							profile!
+						</p>
+						<ol class="mb-6 list-decimal space-y-2 pl-5 text-gray-600 dark:text-gray-300">
+							<li>Click the "Create user" button</li>
+							<li>Fill in the user's details in the form</li>
+							<li>Save the new user profile</li>
+						</ol>
+						<p class="mb-6 text-sm text-gray-500 dark:text-gray-400">
+							Once users are added, they'll appear in a table on this page, where you can manage and
+							edit all user profiles.
+						</p>
+					</div>
+				</div>
 			</div>
-			<div class="w-full md:w-1/2">
-				<h2 class="mb-4 text-2xl font-bold text-gray-900 dark:text-white">No users found</h2>
-				<p class="mb-6 text-gray-600 dark:text-gray-300">
-					Your user database is currently empty. Let's get started by creating your user
-					profile!
-				</p>
-				<ol class="mb-6 list-decimal space-y-2 pl-5 text-gray-600 dark:text-gray-300">
-					<li>Click the "Create user" button</li>
-					<li>Fill in the user's details in the form</li>
-					<li>Save the new user profile</li>
-				</ol>
-				<p class="mb-6 text-sm text-gray-500 dark:text-gray-400">
-					Once users are added, they'll appear in a table on this page, where you can manage and
-					edit all user profiles.
-				</p>
-				<!-- <Button
-					size="lg"
-					class="w-full justify-center gap-2 rounded-md bg-green-600 px-4 py-3 text-base font-medium text-white hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 sm:w-auto"
-					on:click={handleOpenUser}
-				>
-					<PlusOutline size="sm" />
-					Create your first user
-				</Button> -->
-			</div>
-		</div>
-	</div>
 		{:else}
-		<div class="flex flex-col h-full" style="height: 45rem;"> <!-- Adjust height to fit your design -->
-			<!-- Table container with a fixed height -->
-			<div class="flex-grow overflow-x-auto">
-				<Table class="select-none h-full">
-					<TableHead class="sticky top-0 border-y border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700">
-					  <TableHeadCell class="w-4 p-4"></TableHeadCell>
-					  {#each ['Name', 'Status', 'Date Added', 'Role', 'Region', 'Actions'] as title, index}
-						<TableHeadCell
-						  class="p-4 font-medium text-gray-900 dark:text-white {index > 0
-							? 'text-center'
-							: ''}"
-						>
-						  {title}
-						</TableHeadCell>
-					  {/each}
-					</TableHead>
-					<TableBody class="h-full" style="max-height: 40rem; overflow-y: auto;">
-					  {#each paginatedUsers as user}
-					  <TableBodyRow class="text-base hover:bg-gray-100 dark:hover:bg-gray-800">
-						<TableBodyCell class="w-4 p-4"></TableBodyCell>
-						  <TableBodyCell class="mr-12 flex items-center space-x-6 whitespace-nowrap p-4">
-							<Avatar
-							  src={user.photo_url || imagesPath('default-avatar.png', 'users')}
-							  alt="User avatar"
-							  class="h-10 w-10 rounded-full"
-							/>
-							<div class="text-sm font-normal text-gray-500 dark:text-gray-400">
-							  <div class="text-base font-semibold text-gray-900 dark:text-white">
-								{user.inspector_name}
-							  </div>
-							  <div class="text-sm font-normal text-gray-500 dark:text-gray-400">
-								{user.email}
-							  </div>
-							</div>
-						  </TableBodyCell>
-						  <TableBodyCell class="p-4 text-center">
-							<span class="flex items-center justify-center">
-							  <span
-								class={`h-2.5 w-2.5 rounded-full bg-${getStatusColor(user.is_online)}-500 mr-2`}
-							  ></span>
-<span class={`text-sm font-medium text-${getStatusColor(user.is_online)}-500`}>
-              {getStatusText(user.is_online)}
-            </span>
-          </span>
-        </TableBodyCell>
-        <TableBodyCell class="p-4 text-center text-base text-gray-900 dark:text-gray-300">
-          {new Date(user.created_at).toLocaleDateString()}
-        </TableBodyCell>
-        <TableBodyCell class="p-4 text-center text-base text-gray-900 dark:text-gray-300">
-          {user.role}
-        </TableBodyCell>
-		<TableBodyCell class="p-4 text-center text-base text-gray-900 dark:text-gray-300">
-			{formatRegionName(user.regions?.region_name)}
-		</TableBodyCell>
-        <TableBodyCell class="flex items-center justify-center space-x-2 p-4">
-          <Button
-            size="sm"
-            class="gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-            on:click={() => {
-              current_user = user;
-              openUser = true;
-            }}
-          >
-            <EditOutline size="sm" /> Edit user
-          </Button>
-          <Button
-            color="red"
-            size="sm"
-            class="gap-2 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400"
-            on:click={() => {
-              userToDelete = user.id;
-              openDelete = true;
-            }}
-          >
-            <TrashBinSolid size="sm" /> Delete user
-          </Button>
-        </TableBodyCell>
-      </TableBodyRow>
-    {/each}
-  </TableBody>
-</Table>
-		</div>
-		<!-- Pagination and buttons below the table items -->
-		<div>
+			<UserList
+				users={paginatedUsers}
+				onEditUser={handleEditUser}
+				onDeleteUser={handleDeleteUser}
+			/>
 			<div class="mt-4 flex justify-between">
 				<Button color="blue" on:click={handlePreviousPage} disabled={currentPage === 1}>
 					Previous
 				</Button>
-				<span class="text-gray-400">Page {currentPage} of {Math.ceil(filteredUsers.length / itemsPerPage)}</span>
+				<span class="text-gray-400"
+					>Page {currentPage} of {Math.ceil(filteredUsers.length / itemsPerPage)}</span
+				>
 				<Button
 					color="blue"
 					on:click={handleNextPage}
@@ -427,11 +344,8 @@
 					Next
 				</Button>
 			</div>
-		</div>
+		{/if}
 	</div>
-{/if}
-
-</div>
 </main>
 
 <User

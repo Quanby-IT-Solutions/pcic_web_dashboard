@@ -1,11 +1,12 @@
 <script lang="ts">
+	import logo from '$lib/assets/pcic.svg';
 	import { Label, Input } from 'flowbite-svelte';
 	import ResetPassword from '../utils/authentication/ResetPassword.svelte';
 	import MetaTag from '../utils/MetaTag.svelte';
 	const title = 'Reset your password';
 	const site = {
 		name: 'Flowbite',
-		img: '/images/Philippine_Crop_Insurance_Corporation_(PCIC).svg',
+		img: logo,
 		link: '/',
 		imgAlt: 'PCIC Logo'
 	};

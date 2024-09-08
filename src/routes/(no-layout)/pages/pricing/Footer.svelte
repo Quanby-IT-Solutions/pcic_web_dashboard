@@ -1,11 +1,12 @@
 <script>
+	import logo from '$lib/assets/pcic.svg';
+
 	import {
 		Footer,
 		FooterCopyright,
 		FooterLinkGroup,
 		FooterLink,
-		FooterBrand,
-		FooterIcon
+		FooterBrand
 	} from 'flowbite-svelte';
 </script>
 
@@ -14,12 +15,7 @@
 		<div class="md:flex md:justify-between">
 			<div class="grid grid-cols-2 gap-8 sm:grid-cols-6 sm:gap-6">
 				<div class="col-span-2 mb-6 md:mb-0">
-					<FooterBrand
-						href="https://flowbite.com"
-						src="/images/Philippine_Crop_Insurance_Corporation_(PCIC).svg"
-						alt="PCIC Logo"
-						name="Flowbite"
-					/>
+					<FooterBrand href="https://flowbite.com" src={logo} alt="PCIC Logo" name="Flowbite" />
 					<p class="mt-4 max-w-lg text-gray-500 dark:text-gray-400">
 						Flowbite is a UI library of elements &amp; components based on Tailwind CSS that can get
 						you started building websites faster and more efficiently.

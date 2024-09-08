@@ -1,6 +1,4 @@
-import type { PageLoad } from './$types';
-
-const getDashboardData = () => {
+export const getDashboardData = () => {
 	return {
 		series: [
 			{
@@ -15,8 +13,4 @@ const getDashboardData = () => {
 			}
 		]
 	};
-};
-
-export const load: PageLoad = () => {
-	return getDashboardData();
 };

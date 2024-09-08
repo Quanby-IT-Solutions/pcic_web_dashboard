@@ -1,33 +1,24 @@
 <script lang="ts">
 	import { Label, Input, DarkMode } from 'flowbite-svelte';
+	import { goto } from '$app/navigation';
 	import SignIn from '../utils/authentication/SignIn.svelte';
 	import MetaTag from '../utils/MetaTag.svelte';
 	import Toast from '../utils/widgets/Toast.svelte';
-	import { goto } from '$app/navigation';
+
+	import logo from '$lib/assets/pcic.svg';
+
 	let title = 'Sign in to Platform';
 	let site = {
-		name: 'PCIC Portal	',
-		img: '/images/Philippine_Crop_Insurance_Corporation_(PCIC).svg',
+		name: 'PCIC Portal',
+		img: logo,
 		link: '/',
 		imgAlt: 'PCIC Logo'
 	};
-	let rememberMe = true;
-	let lostPassword = true;
-	let createAccount = true;
-	let lostPasswordLink = 'forgot-password';
-	let loginTitle = 'Login to your account';
-	let registerLink = 'sign-up';
-	let createAccountTitle = 'Create account';
 
-	const path: string = '/authentication/sign-in';
-	const description: string = 'Sign in example - PCIC Web Dashboard';
-	const metaTitle: string = 'PCIC Web Dashboard - Sign in';
-	const subtitle: string = 'Sign in';
-
-	let toastProps: { show: boolean; message: string; type: 'success' | 'error' } = {
+	let toastProps = {
 		show: false,
 		message: '',
-		type: 'success'
+		type: 'success' as 'success' | 'error'
 	};
 
 	const handleSubmit = async (event: Event) => {
@@ -37,42 +28,41 @@
 			const email = formData.get('email') as string;
 			const password = formData.get('password') as string;
 
-			const params = new URLSearchParams();
-			params.append('email', email);
-			params.append('password', password);
-
 			const response = await fetch('?/signin', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/x-www-form-urlencoded'
 				},
-				body: params.toString()
+				body: new URLSearchParams({ email, password }).toString()
 			});
-			if (!response.ok) {
-				throw new Error('Failed to sign in');
-			}
-			const data = JSON.parse(JSON.parse((await response.json()).data)[0]);
-			console.log(data);
-			showToast(data.message, data.success ? 'success' : 'error');
-			if (data.success) {
-				setTimeout(() => {
-					goto('/dashboard');
-				}, 1500);
+
+			if (!response.ok) throw new Error('Failed to sign in');
+
+			const { message, success } = await response.json();
+			showToast(message, success ? 'success' : 'error');
+
+			if (success) {
+				setTimeout(() => goto('/dashboard'), 1500);
 			}
 		} catch (error) {
-			console.error('Error signing in:', error);
+			showToast('Error signing in. Please try again.', 'error');
 		}
 	};
 
 	const showToast = (message: string, type: 'success' | 'error') => {
 		toastProps = { show: true, message, type };
 		setTimeout(() => {
-			toastProps = { ...toastProps, show: false };
+			toastProps.show = false;
 		}, 3000);
 	};
 </script>
 
-<MetaTag {path} {description} title={metaTitle} {subtitle} />
+<MetaTag
+	path="/authentication/sign-in"
+	description="Sign In - PCIC Web Dashboard"
+	title="PCIC Web Dashboard - Sign in"
+	subtitle="Sign in"
+/>
 
 <div class="relative min-h-screen">
 	<div class="absolute right-4 top-4 z-10">
@@ -81,25 +71,14 @@
 		/>
 	</div>
 
-	<SignIn
-		{title}
-		{site}
-		{rememberMe}
-		{lostPassword}
-		{createAccount}
-		{lostPasswordLink}
-		{loginTitle}
-		{registerLink}
-		{createAccountTitle}
-		{handleSubmit}
-	>
+	<SignIn {title} {site} loginTitle="Login to your account" on:submit={handleSubmit}>
 		<div>
 			<Label for="email" class="mb-2 dark:text-white">Your email</Label>
 			<Input
 				type="email"
 				name="email"
 				id="email"
-				placeholder="name@company.com"
+				placeholder="username@pcic.com"
 				required
 				class="border outline-none dark:border-gray-600 dark:bg-gray-700"
 			/>

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { Button, CloseButton, Heading } from 'flowbite-svelte';
 	import { ExclamationCircleOutline } from 'flowbite-svelte-icons';
-	export let hidden: boolean = true; // modal control
-	export let deleteTask:any = null;
+	export let hidden: boolean = true;
+	export let deleteTask: any = null;
 </script>
 
 <Heading tag="h5" class="mb-6 text-sm font-semibold uppercase">Delete</Heading>
@@ -17,8 +17,12 @@
 	Are you sure you want to delete this task?
 </h3>
 
-<Button on:click={()=>{
-	deleteTask();
-	hidden = true;
-}} color="red" class="mr-2">Yes, I'm sure</Button>
+<Button
+	on:click={() => {
+		deleteTask();
+		hidden = true;
+	}}
+	color="red"
+	class="mr-2">Yes, I'm sure</Button
+>
 <Button color="alternative" on:click={() => (hidden = true)}>No, cancel</Button>

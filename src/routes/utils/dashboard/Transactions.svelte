@@ -1,11 +1,10 @@
 <script lang="ts">
+	import spinner from '$lib/assets/pcic-spinner.gif';
 	import { onMount } from 'svelte';
 	import TaskTimeline from './TaskTimeline.svelte';
 	import { AdjustmentsHorizontalSolid } from 'flowbite-svelte-icons';
 
 	import {
-		Breadcrumb,
-		BreadcrumbItem,
 		Table,
 		TableBody,
 		TableBodyCell,
@@ -16,65 +15,27 @@
 		Button,
 		Checkbox,
 		Modal,
-		Toggle,
-		Select,
-		Input
+		Select
 	} from 'flowbite-svelte';
 	import jsPDF from 'jspdf';
 	import autoTable from 'jspdf-autotable';
 	import * as XLSX from 'xlsx';
-	import {
-		CloseOutline,
-		FilePdfOutline,
-		FilterOutline,
-		PlusOutline,
-		SortOutline,
-		TableColumnOutline
-	} from 'flowbite-svelte-icons';
+	import { FilePdfOutline, TableColumnOutline } from 'flowbite-svelte-icons';
 	import TaskTable from '$lib/utils/report-generation/components/TaskTable.svelte';
 	import RegionTable from '$lib/utils/report-generation/components/RegionTable.svelte';
 
 	import {
-		addTaskFilter,
-		addTaskSortCriteria,
-		applyTaskFilters,
-		applyTaskSorting,
-		clearTaskFilters,
-		clearTaskSort,
 		initializeTaskFilteredData,
-		removeTaskFilter,
-		removeTaskSortCriteria,
-		showTaskFilter,
-		showTaskSorting,
 		taskActiveHeaders,
 		taskAllHeaders,
-		taskFilters,
-		taskOperators,
-		taskSelectedHeaders,
-		taskSortCriteria
+		taskSelectedHeaders
 	} from '$lib/utils/report-generation/taskStore';
 	import {
-		addRegionFilter,
-		addRegionSortCriteria,
-		applyRegionFilters,
-		applyRegionSorting,
-		clearRegionFilters,
-		clearRegionSort,
 		initializeRegionFilteredData,
 		regionActiveHeaders,
 		regionAllHeaders,
-		regionFilters,
-		regionOperators,
-		regionSelectedHeaders,
-		regionSortCriteria,
-		removeRegionFilter,
-		removeRegionSortCriteria,
-		showRegionFilter,
-		showRegionSorting
+		regionSelectedHeaders
 	} from '$lib/utils/report-generation/regionStore';
-
-	import ButtonContainer from '$lib/utils/report-generation/components/ButtonContainer.svelte';
-	import { slide } from 'svelte/transition';
 
 	let showActivity = false;
 	let selectedUserId: string | null = null;
@@ -83,8 +44,6 @@
 	let dataError: string | null = null;
 	let showPagination = true;
 
-
-	// Dropdown states
 	let selectedMonth = new Date().getMonth();
 	let selectedDay = new Date().getDate();
 	let selectedWeek = getCurrentWeekNumber(new Date());
@@ -139,7 +98,7 @@
 		selectedWeek = getCurrentWeekNumber(selectedDate);
 		const totalWeeksInMonth = getCurrentWeekNumber(
 			new Date(new Date().getFullYear(), selectedMonth + 1, 0)
-		); // Get number of weeks in the month
+		);
 		weekOptions = Array.from({ length: totalWeeksInMonth }, (_, i) => i + 1);
 	}
 
@@ -187,38 +146,53 @@
 				today.getFullYear()
 			);
 
-			inspectors = users.map((user: { id: any; inspector_name: any; mobile_number: any; is_online: any; email: any; regions: { region_name: any; }; }) => {
-				const userTasks = tasks.filter((task: { assignee: any; }) => task.assignee === user.id);
-				const totalDispatch = userTasks.length;
-				const completed = userTasks.filter((task: { status: string; }) => task.status === 'completed').length;
-				const backlogs = userTasks.filter((task: { status: string; }) => task.status === 'ongoing').length;
+			inspectors = users.map(
+				(user: {
+					id: any;
+					inspector_name: any;
+					mobile_number: any;
+					is_online: any;
+					email: any;
+					regions: { region_name: any };
+				}) => {
+					const userTasks = tasks.filter((task: { assignee: any }) => task.assignee === user.id);
+					const totalDispatch = userTasks.length;
+					const completed = userTasks.filter(
+						(task: { status: string }) => task.status === 'completed'
+					).length;
+					const backlogs = userTasks.filter(
+						(task: { status: string }) => task.status === 'ongoing'
+					).length;
 
-				const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-				const tasksByDay = weekDays.map((day, index) => {
-					const dayStart = new Date(startOfWeek);
-					dayStart.setDate(startOfWeek.getDate() + index);
-					const dayEnd = new Date(dayStart);
-					dayEnd.setHours(23, 59, 59, 999);
+					const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+					const tasksByDay = weekDays.map((day, index) => {
+						const dayStart = new Date(startOfWeek);
+						dayStart.setDate(startOfWeek.getDate() + index);
+						const dayEnd = new Date(dayStart);
+						dayEnd.setHours(23, 59, 59, 999);
 
-					return userTasks.filter((task: { created_at: string | number | Date; status: string; }) => {
-						const taskDate = new Date(task.created_at);
-						return taskDate >= dayStart && taskDate <= dayEnd && task.status === 'completed';
-					}).length;
-				});
+						return userTasks.filter(
+							(task: { created_at: string | number | Date; status: string }) => {
+								const taskDate = new Date(task.created_at);
+								return taskDate >= dayStart && taskDate <= dayEnd && task.status === 'completed';
+							}
+						).length;
+					});
 
-				return {
-					id: user.id,
-					name: user.inspector_name,
-					mobile: user.mobile_number,
-					online: user.is_online,
-					...tasksByDay.reduce((acc, count, index) => ({ ...acc, [weekDays[index]]: count }), {}),
-					totalDispatch,
-					completed,
-					backlogs,
-					email: user.email,
-					region: user.regions?.region_name ?? 'N/A'
-				};
-			});
+					return {
+						id: user.id,
+						name: user.inspector_name,
+						mobile: user.mobile_number,
+						online: user.is_online,
+						...tasksByDay.reduce((acc, count, index) => ({ ...acc, [weekDays[index]]: count }), {}),
+						totalDispatch,
+						completed,
+						backlogs,
+						email: user.email,
+						region: user.regions?.region_name ?? 'N/A'
+					};
+				}
+			);
 		} catch (error) {
 			dataError = (error as Error).message;
 			console.error('Error:', error);
@@ -230,7 +204,6 @@
 		selectedUserId = userId;
 		showActivity = true;
 		showPagination = false;
-
 	}
 
 	function goBack() {
@@ -261,36 +234,45 @@
 		fetchInspectors();
 	}
 
-	
 	function toggleHeader(header: string) {
-    if (['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].includes(header)) {
-      if (userSelectedHeaders.includes(header)) {
-        userSelectedHeaders = userSelectedHeaders.filter(h => h !== header);
-        // Check if no days are selected, then uncheck total columns
-        if (!['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].some(day => userSelectedHeaders.includes(day))) {
-          userSelectedHeaders = userSelectedHeaders.filter(h => !['Total Dispatch', 'Total Completed', 'Backlogs'].includes(h));
-        }
-      } else {
-        userSelectedHeaders = [...userSelectedHeaders, header];
-      }
-    } else if (['Total Dispatch', 'Total Completed', 'Backlogs'].includes(header)) {
-      if (userSelectedHeaders.includes(header)) {
-        userSelectedHeaders = userSelectedHeaders.filter(h => h !== header);
-      } else if (['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].some(day => userSelectedHeaders.includes(day))) {
-        userSelectedHeaders = [...userSelectedHeaders, header];
-      }
-    } else {
-      if (userSelectedHeaders.includes(header)) {
-        userSelectedHeaders = userSelectedHeaders.filter(h => h !== header);
-      } else {
-        userSelectedHeaders = [...userSelectedHeaders, header];
-      }
-    }
-  }
+		if (['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].includes(header)) {
+			if (userSelectedHeaders.includes(header)) {
+				userSelectedHeaders = userSelectedHeaders.filter((h) => h !== header);
+				if (
+					!['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].some((day) =>
+						userSelectedHeaders.includes(day)
+					)
+				) {
+					userSelectedHeaders = userSelectedHeaders.filter(
+						(h) => !['Total Dispatch', 'Total Completed', 'Backlogs'].includes(h)
+					);
+				}
+			} else {
+				userSelectedHeaders = [...userSelectedHeaders, header];
+			}
+		} else if (['Total Dispatch', 'Total Completed', 'Backlogs'].includes(header)) {
+			if (userSelectedHeaders.includes(header)) {
+				userSelectedHeaders = userSelectedHeaders.filter((h) => h !== header);
+			} else if (
+				['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].some((day) =>
+					userSelectedHeaders.includes(day)
+				)
+			) {
+				userSelectedHeaders = [...userSelectedHeaders, header];
+			}
+		} else {
+			if (userSelectedHeaders.includes(header)) {
+				userSelectedHeaders = userSelectedHeaders.filter((h) => h !== header);
+			} else {
+				userSelectedHeaders = [...userSelectedHeaders, header];
+			}
+		}
+	}
 
-  $: isDaySelected = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].some(day => userSelectedHeaders.includes(day));
+	$: isDaySelected = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].some((day) =>
+		userSelectedHeaders.includes(day)
+	);
 
-	// Updates the active columns based on selected headers
 	const updateColumns = () => {
 		if (selectedTable == 'tasks') {
 			$taskActiveHeaders = [...$taskSelectedHeaders];
@@ -364,162 +346,87 @@
 		return mappedData;
 	};
 
-	// const generatePDF = () => {
-	// 	const doc = new jsPDF({
-	// 		orientation: 'landscape',
-	// 		unit: 'pt',
-	// 		format: 'A4'
-	// 	});
-
-	// 	const headers = userActiveHeaders;
-	// 	const body = inspectors.map((inspector) =>
-	// 		headers.map((header) => mapInspectorData(inspector, headers)[header])
-	// 	);
-
-	// 	doc.setFontSize(18);
-	// 	doc.text('Inspectors Weekly Tasks', doc.internal.pageSize.width / 2, 25, {
-	// 		align: 'center'
-	// 	});
-
-	// 	autoTable(doc, {
-	// 		head: [headers],
-	// 		body,
-	// 		startY: 45,
-	// 		theme: 'grid',
-	// 		headStyles: {
-	// 			fillColor: [41, 128, 185],
-	// 			textColor: [255, 255, 255],
-	// 			fontSize: 10,
-	// 			halign: 'center'
-	// 		},
-	// 		bodyStyles: {
-	// 			fontSize: 8,
-	// 			halign: 'center'
-	// 		},
-	// 		columnStyles: {
-	// 			0: { cellWidth: 'auto' },
-	// 			1: { cellWidth: 'auto' }
-	// 		},
-	// 		styles: {
-	// 			overflow: 'linebreak',
-	// 			cellWidth: 'wrap'
-	// 		},
-	// 		margin: { top: 20 },
-	// 		didParseCell: function (data) {
-	// 			if (data.section === 'body' && data.column.index === 1) {
-	// 				data.cell.styles.cellWidth = 'auto';
-	// 			}
-	// 		},
-	// 		tableWidth: 'auto'
-	// 	});
-
-	// 	doc.save('inspectors_report.pdf');
-	// };
-
-	// const generateExcel = () => {
-	// 	const headers = userActiveHeaders;
-	// 	const body = inspectors.map((inspector) => mapInspectorData(inspector, headers));
-
-	// 	// Create worksheet
-	// 	const worksheet = XLSX.utils.json_to_sheet(body, { header: headers });
-	// 	// Adjust column widths
-	// 	const columnWidths = headers.map((header) => ({ wch: Math.max(header.length, 15) }));
-	// 	worksheet['!cols'] = columnWidths;
-
-	// 	// Create workbook and append the worksheet
-	// 	const workbook = XLSX.utils.book_new();
-	// 	XLSX.utils.book_append_sheet(workbook, worksheet, 'Inspectors Weekly Tasks');
-
-	// 	// Write the workbook to a file
-	// 	XLSX.writeFile(workbook, 'inspectors_report.xlsx');
-	// };
-
 	function getTodayDate() {
-    const today = new Date();
-    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  }
+		const today = new Date();
+		return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+	}
 
+	const generatePDF = () => {
+		if (!isDaySelected) {
+			return;
+		}
 
-  const generatePDF = () => {
-    if (!isDaySelected) {
-      return;
-    }
+		const doc = new jsPDF({
+			orientation: 'landscape',
+			unit: 'pt',
+			format: 'A4'
+		});
 
-    const doc = new jsPDF({
-      orientation: 'landscape',
-      unit: 'pt',
-      format: 'A4'
-    });
+		const headers = userActiveHeaders;
+		const body = inspectors.map((inspector) =>
+			headers.map((header) => mapInspectorData(inspector, headers)[header])
+		);
 
-    const headers = userActiveHeaders;
-    const body = inspectors.map((inspector) =>
-      headers.map((header) => mapInspectorData(inspector, headers)[header])
-    );
+		doc.setFontSize(18);
+		doc.text('Inspectors Weekly Tasks', doc.internal.pageSize.width / 2, 25, {
+			align: 'center'
+		});
 
-    doc.setFontSize(18);
-    doc.text('Inspectors Weekly Tasks', doc.internal.pageSize.width / 2, 25, {
-      align: 'center'
-    });
+		autoTable(doc, {
+			head: [headers],
+			body,
+			startY: 45,
+			theme: 'grid',
+			headStyles: {
+				fillColor: [41, 128, 185],
+				textColor: [255, 255, 255],
+				fontSize: 10,
+				halign: 'center'
+			},
+			bodyStyles: {
+				fontSize: 8,
+				halign: 'center'
+			},
+			columnStyles: {
+				0: { cellWidth: 'auto' },
+				1: { cellWidth: 'auto' }
+			},
+			styles: {
+				overflow: 'linebreak',
+				cellWidth: 'auto'
+			},
+			margin: { top: 20 },
+			didParseCell: function (data) {
+				if (data.section === 'body' && data.column.index === 1) {
+					data.cell.styles.cellWidth = 'auto';
+				}
+			},
+			tableWidth: 'auto'
+		});
 
-    autoTable(doc, {
-      head: [headers],
-      body,
-      startY: 45,
-      theme: 'grid',
-      headStyles: {
-        fillColor: [41, 128, 185],
-        textColor: [255, 255, 255],
-        fontSize: 10,
-        halign: 'center'
-      },
-      bodyStyles: {
-        fontSize: 8,
-        halign: 'center'
-      },
-      columnStyles: {
-        0: { cellWidth: 'auto' },
-        1: { cellWidth: 'auto' }
-      },
-      styles: {
-        overflow: 'linebreak',
-        cellWidth: 'wrap'
-      },
-      margin: { top: 20 },
-      didParseCell: function (data) {
-        if (data.section === 'body' && data.column.index === 1) {
-          data.cell.styles.cellWidth = 'auto';
-        }
-      },
-      tableWidth: 'auto'
-    });
+		const dayToday = getTodayDate();
+		doc.save(`inspectors_report_${dayToday}.pdf`);
+	};
 
-    const dayToday = getTodayDate();
-    doc.save(`inspectors_report_${dayToday}.pdf`);
-  };
+	const generateExcel = () => {
+		if (!isDaySelected) {
+			return;
+		}
 
-  const generateExcel = () => {
-    if (!isDaySelected) {
-      return;
-    }
+		const headers = userActiveHeaders;
+		const body = inspectors.map((inspector) => mapInspectorData(inspector, headers));
 
-    const headers = userActiveHeaders;
-    const body = inspectors.map((inspector) => mapInspectorData(inspector, headers));
+		const worksheet = XLSX.utils.json_to_sheet(body, { header: headers });
 
-    // Create worksheet
-    const worksheet = XLSX.utils.json_to_sheet(body, { header: headers });
+		const columnWidths = headers.map((header) => ({ wch: Math.max(header.length, 15) }));
+		worksheet['!cols'] = columnWidths;
 
-    // Adjust column widths
-    const columnWidths = headers.map((header) => ({ wch: Math.max(header.length, 15) }));
-    worksheet['!cols'] = columnWidths;
+		const workbook = XLSX.utils.book_new();
+		XLSX.utils.book_append_sheet(workbook, worksheet, 'Inspectors Weekly Tasks');
 
-    // Create workbook and append the worksheet
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Inspectors Weekly Tasks');
-
-    // Write the workbook to a file
-    const dayToday = getTodayDate();
-    XLSX.writeFile(workbook, `inspectors_report_${dayToday}.xlsx`);
-  };
+		const dayToday = getTodayDate();
+		XLSX.writeFile(workbook, `inspectors_report_${dayToday}.xlsx`);
+	};
 
 	onMount(() => {
 		updateWeekOptions();
@@ -558,7 +465,6 @@
 		}
 	};
 
-	// Pagination
 	$: if (inspectors.length > 0) {
 		paginateInspectors();
 	}
@@ -596,13 +502,10 @@
 	{:else}
 		<div class="p-4">
 			<div class="mb-4 flex items-center justify-between">
-				<Heading
-					tag="h1"
-					class="text-xl font-semibold text-gray-900 dark:text-white sm:text-2xl"
-				>
+				<Heading tag="h1" class="text-xl font-semibold text-gray-900 dark:text-white sm:text-2xl">
 					Inspectors Weekly Tasks
 				</Heading>
-				
+
 				<div class="flex items-center gap-2">
 					<span class="text-right text-sm text-gray-700 dark:text-gray-300">Current:</span>
 					<Select
@@ -638,8 +541,7 @@
 						</select>
 					</div>
 					<div class="flex items-center">
-						<label for="daySelect" class="mr-2 text-sm text-gray-700 dark:text-gray-300"
-							>Day:</label
+						<label for="daySelect" class="mr-2 text-sm text-gray-700 dark:text-gray-300">Day:</label
 						>
 						<select
 							id="daySelect"
@@ -672,102 +574,105 @@
 			{#if selectedTable === 'users'}
 				<div class="mb-4 flex justify-end space-x-4">
 					<Button
-					on:click={() => (showColumnModal = true)}
-					color="blue"
-					size="xs"
-					class="flex items-center gap-2"
-				>
-					<AdjustmentsHorizontalSolid /> Customize Columns
-				</Button>
-				<Button
-					class="flex items-center gap-2 text-xs"
-					color="red"
-					size="xs"
-					on:click={generatePDF}
-					disabled={!isDaySelected}
-				>
-					<FilePdfOutline /> Download PDF
-				</Button>
-				<Button
-					class="flex items-center gap-2 text-xs"
-					color="green"
-					size="xs"
-					on:click={generateExcel}
-					disabled={!isDaySelected}
-				>
-					<TableColumnOutline /> Download Excel
-				</Button>
-
+						on:click={() => (showColumnModal = true)}
+						color="blue"
+						size="xs"
+						class="flex items-center gap-2"
+					>
+						<AdjustmentsHorizontalSolid /> Customize Columns
+					</Button>
+					<Button
+						class="flex items-center gap-2 text-xs"
+						color="red"
+						size="xs"
+						on:click={generatePDF}
+						disabled={!isDaySelected}
+					>
+						<FilePdfOutline /> Download PDF
+					</Button>
+					<Button
+						class="flex items-center gap-2 text-xs"
+						color="green"
+						size="xs"
+						on:click={generateExcel}
+						disabled={!isDaySelected}
+					>
+						<TableColumnOutline /> Download Excel
+					</Button>
 				</div>
 			{/if}
 
 			{#if dataError}
 				<p class="text-red-500">{dataError}</p>
 			{:else if isLoading}
-				<div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-50">
-					<img src="/images/pcic-spinner.gif" alt="Loading..." class="h-1/2 w-1/3" />
+				<div
+					class="fixed bottom-0 left-0 right-0 top-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-50"
+				>
+					<img src={spinner} alt="Loading..." class="h-1/2 w-1/3 object-contain" />
 				</div>
 			{:else if selectedTable === 'tasks'}
 				<TaskTable />
 			{:else if selectedTable === 'users'}
-				
-<Table hoverable={true}>
-	<TableHead class="border-b border-gray-300 bg-gray-50 dark:border-gray-700">
-	  {#each userActiveHeaders as header}
-		<TableHeadCell
-		  class="whitespace-nowrap px-6 py-3 {header === 'Inspector Name' ||
-		  header === 'Mobile Number'
-			? 'text-left'
-			: 'text-center'} font-medium text-gray-900 dark:text-white"
-		>
-		  {header}
-		</TableHeadCell>
-	  {/each}
-	</TableHead>
-	<TableBody>
-	  {#if paginatedInspectors.length > 0}
-		{#each paginatedInspectors as inspector}
-		  <TableBodyRow
-			on:click={() => handleRowClick(inspector.id)}
-			class="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
-		  >
-			{#each userActiveHeaders as header}
-			  <TableBodyCell
-				class="px-6 py-4 {header === 'Inspector Name' || header === 'Mobile Number'
-				  ? 'text-left'
-				  : 'text-center'} text-base text-gray-900 dark:text-gray-300"
-			  >
-				{#if header === 'Online'}
-				  <span class="flex items-center justify-center">
-					<span
-					  class={`h-3 w-3 rounded-full ${
-						inspector.online ? 'bg-green-500' : 'bg-gray-500'
-					  } mr-2`}
-					></span>
-					<span
-					  class={`text-sm font-semibold ${
-						inspector.online ? 'text-green-600' : 'text-gray-500'
-					  }`}
-					>
-					  {inspector.online ? 'Online' : 'Offline'}
-					</span>
-				  </span>
-				{:else}
-				  {mapInspectorData(inspector, userActiveHeaders)[header]}
-				{/if}
-			  </TableBodyCell>
-			{/each}
-		  </TableBodyRow>
-		{/each}
-	  {:else}
-		<TableBodyRow>
-		  <TableBodyCell colspan={userActiveHeaders.length} class="text-center text-base text-gray-500 dark:text-gray-400">
-			No inspectors found.
-		  </TableBodyCell>
-		</TableBodyRow>
-	  {/if}
-	</TableBody>
-  </Table>
+				<Table hoverable={true}>
+					<TableHead class="border-b border-gray-300 bg-gray-50 dark:border-gray-700">
+						{#each userActiveHeaders as header}
+							<TableHeadCell
+								class="whitespace-nowrap px-6 py-3 {header === 'Inspector Name' ||
+								header === 'Mobile Number'
+									? 'text-left'
+									: 'text-center'} font-medium text-gray-900 dark:text-white"
+							>
+								{header}
+							</TableHeadCell>
+						{/each}
+					</TableHead>
+					<TableBody>
+						{#if paginatedInspectors.length > 0}
+							{#each paginatedInspectors as inspector}
+								<TableBodyRow
+									on:click={() => handleRowClick(inspector.id)}
+									class="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+								>
+									{#each userActiveHeaders as header}
+										<TableBodyCell
+											class="px-6 py-4 {header === 'Inspector Name' || header === 'Mobile Number'
+												? 'text-left'
+												: 'text-center'} text-base text-gray-900 dark:text-gray-300"
+										>
+											{#if header === 'Online'}
+												<span class="flex items-center justify-center">
+													<span
+														class={`h-3 w-3 rounded-full ${
+															inspector.online ? 'bg-green-500' : 'bg-gray-500'
+														} mr-2`}
+													></span>
+													<span
+														class={`text-sm font-semibold ${
+															inspector.online ? 'text-green-600' : 'text-gray-500'
+														}`}
+													>
+														{inspector.online ? 'Online' : 'Offline'}
+													</span>
+												</span>
+											{:else}
+												{mapInspectorData(inspector, userActiveHeaders)[header]}
+											{/if}
+										</TableBodyCell>
+									{/each}
+								</TableBodyRow>
+							{/each}
+						{:else}
+							<TableBodyRow>
+								<TableBodyCell
+									colspan={userActiveHeaders.length}
+									class="text-center text-base text-gray-500 dark:text-gray-400"
+								>
+									No inspectors found.
+								</TableBodyCell>
+							</TableBodyRow>
+						{/if}
+					</TableBody>
+				</Table>
 			{:else if selectedTable === 'regions'}
 				<RegionTable />
 			{/if}
@@ -775,20 +680,22 @@
 	{/if}
 
 	{#if selectedTable === 'users' && showPagination}
-	<div class="mx-4 mt-4 flex items-center justify-between">
-		<Button color="blue" on:click={handlePreviousPage} disabled={currentPage === 1}>
-			Previous
-		</Button>
-		<span class="text-gray-400">Page {currentPage} of {Math.ceil(inspectors.length / itemsPerPage)}</span>
-		<Button
-			color="blue"
-			on:click={handleNextPage}
-			disabled={currentPage * itemsPerPage >= inspectors.length}
-		>
-			Next
-		</Button>
-	</div>
-{/if}
+		<div class="mx-4 mt-4 flex items-center justify-between">
+			<Button color="blue" on:click={handlePreviousPage} disabled={currentPage === 1}>
+				Previous
+			</Button>
+			<span class="text-gray-400"
+				>Page {currentPage} of {Math.ceil(inspectors.length / itemsPerPage)}</span
+			>
+			<Button
+				color="blue"
+				on:click={handleNextPage}
+				disabled={currentPage * itemsPerPage >= inspectors.length}
+			>
+				Next
+			</Button>
+		</div>
+	{/if}
 </main>
 
 <Modal bind:open={showColumnModal} size="lg" autoclose={false}>
@@ -816,7 +723,7 @@
 				{/each}
 			{:else}
 				<div>
-					<h2 > Personal Data </h2>
+					<h2>Personal Data</h2>
 					<Checkbox
 						checked={userSelectedHeaders.includes('Mobile Number')}
 						on:change={() => toggleHeader('Mobile Number')}
@@ -843,7 +750,7 @@
 					</Checkbox>
 				</div>
 				<div>
-					<h2> Days </h2>
+					<h2>Days</h2>
 
 					{#each ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as day}
 						<Checkbox
@@ -855,13 +762,15 @@
 					{/each}
 				</div>
 				<div>
-					<h2> Tasks Data </h2>
+					<h2>Tasks Data</h2>
 
 					{#each ['Total Dispatch', 'Total Completed', 'Backlogs'] as header}
 						<Checkbox
 							checked={userSelectedHeaders.includes(header)}
 							on:change={() => toggleHeader(header)}
-							disabled={!['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].some(day => userSelectedHeaders.includes(day))}
+							disabled={!['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].some((day) =>
+								userSelectedHeaders.includes(day)
+							)}
 						>
 							{header}
 						</Checkbox>

@@ -6,7 +6,7 @@
 </script>
 
 <Avatar size="none" class="h-11 w-11">
-	<img alt="" src={imagesPath(src, 'users')} class="rounded-full" />
+	<enhanced:img alt="" src={imagesPath(src, 'users')} class="rounded-full" />
 	<Indicator placement="bottom-right" class="h-5 w-5 translate-y-0" {color}>
 		<slot />
 	</Indicator>
