@@ -60,7 +60,7 @@
       {#each events as event}
         <div class="timeline-item">
           <div class="timeline-icon" style="background-color: {event.iconColor};">
-            <img src={event.icon} alt={event.title} />
+            <enhanced:img src={event.icon} alt={event.title} />
           </div>
           <div class="timeline-content">
             <h3>{event.title}</h3>

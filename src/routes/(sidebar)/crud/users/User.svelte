@@ -1,4 +1,5 @@
 <script lang="ts">
+	import no_user from '$lib/assets/no-user.png';
 	import { Button, Input, Label, Modal, Select } from 'flowbite-svelte';
 	import { createEventDispatcher, onMount } from 'svelte';
 	import Alert from '../../../utils/widgets/alert.svelte';
@@ -74,7 +75,6 @@
 			} else {
 				loggedInUser = userData;
 
-				// Prefill role and region if logged-in user is a Regional_Admin and creating a new user
 				if (loggedInUser.role === 'Regional_Admin' && !current_user) {
 					selectedRole = 'Agent';
 					setDefaultRegion();
@@ -83,10 +83,10 @@
 		}
 	});
 
-	// Function to set default region after regions are loaded
 	function setDefaultRegion() {
 		if (regions.length > 0) {
-			selectedRegionId = regions.find(region => region.region_name === loggedInUser.region_name)?.id || '';
+			selectedRegionId =
+				regions.find((region) => region.region_name === loggedInUser.region_name)?.id || '';
 		}
 	}
 
@@ -122,7 +122,6 @@
 
 			regions = regionsData as Region[];
 
-			// Call setDefaultRegion after regions are fetched
 			setDefaultRegion();
 		} catch (error) {
 			console.error('Error fetching regions:', error);
@@ -208,7 +207,10 @@
 				if (existingUser.email === userData.email) {
 					showAlertMessage('The email is already taken. Please try a different one.', 'error');
 				} else if (existingUser.mobile_number === userData.mobile_number) {
-					showAlertMessage('The mobile number is already taken. Please try a different one.', 'error');
+					showAlertMessage(
+						'The mobile number is already taken. Please try a different one.',
+						'error'
+					);
 				}
 				return;
 			}
@@ -221,7 +223,10 @@
 						photo_url = (await uploadPhoto(photoFile)) || DEFAULT_PROFILE_PIC;
 					} catch (uploadError) {
 						console.error('Failed to upload photo:', uploadError);
-						showAlertMessage('Failed to upload photo. Default profile picture will be used.', 'warning');
+						showAlertMessage(
+							'Failed to upload photo. Default profile picture will be used.',
+							'warning'
+						);
 					}
 				}
 
@@ -250,7 +255,10 @@
 						photo_url = (await uploadPhoto(photoFile)) || DEFAULT_PROFILE_PIC;
 					} catch (uploadError) {
 						console.error('Failed to upload photo:', uploadError);
-						showAlertMessage('Failed to upload photo. Default profile picture will be used.', 'warning');
+						showAlertMessage(
+							'Failed to upload photo. Default profile picture will be used.',
+							'warning'
+						);
 					}
 				}
 				userDataToInsert = {
@@ -318,7 +326,7 @@
 					`File size exceeds limit of ${MAX_FILE_SIZE / (1024 * 1024)}MB. Please choose a smaller file.`,
 					'error'
 				);
-				input.value = ''; // Clear the input
+				input.value = '';
 				photoFile = null;
 			}
 		}
@@ -330,7 +338,7 @@
 		showAlert = true;
 		setTimeout(() => {
 			showAlert = false;
-		}, 5000); // Hide alert after 5 seconds
+		}, 5000);
 	}
 
 	function restrictToNumbers(event: { target: any }) {
@@ -352,7 +360,7 @@
 	<div class="space-y-6 p-0">
 		{#if hasError}
 			<div class="text-center">
-				<img src="/no-user.png" alt="Error" class="mx-auto mb-4 h-1/2 w-1/2" />
+				<enhanced:img src={no_user} alt="Error" class="mx-auto mb-4 h-1/2 w-1/2" />
 				<Alert type="error" message={errorMessage} />
 				<Button class="mt-4" color="red" on:click={refreshPage}>Try Again</Button>
 			</div>
@@ -418,9 +426,9 @@
 					</Label>
 					<Label class="col-span-6 space-y-2 sm:col-span-3">
 						<span>Role</span>
-						<Select 
-							name="role" 
-							class="mt-2" 
+						<Select
+							name="role"
+							class="mt-2"
 							bind:value={selectedRole}
 							on:change={handleRoleChange}
 							required
@@ -432,12 +440,7 @@
 					</Label>
 					<Label class="col-span-6 space-y-2">
 						<span>Region</span>
-						<Select 
-							name="region_id" 
-							class="mt-2" 
-							required 
-							bind:value={selectedRegionId}
-						>
+						<Select name="region_id" class="mt-2" required bind:value={selectedRegionId}>
 							{#each regions as region}
 								<option value={region.id}>{region.region_name}</option>
 							{/each}

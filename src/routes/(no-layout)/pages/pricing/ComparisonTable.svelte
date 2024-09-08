@@ -10,7 +10,7 @@
 	import { CheckOutline, CloseOutline } from 'flowbite-svelte-icons';
 	export let columns: string[] = ['Freelancer', 'Company', 'Enterprise'];
 	export let rows: { name: string; [key: string]: string | boolean }[] = [
-		{ name: 'Seperate business/personal', freelancer: true, company: true, enterprise: true },
+		{ name: 'Separate business/personal', freelancer: true, company: true, enterprise: true },
 		{ name: 'Estimate tax payments', freelancer: true, company: true, enterprise: true },
 		{ name: 'Stock control', freelancer: true, company: true, enterprise: true },
 		{ name: 'Create invoices & estimates', freelancer: false, company: true, enterprise: true },

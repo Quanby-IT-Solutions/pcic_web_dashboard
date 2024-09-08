@@ -1,13 +1,16 @@
 <script lang="ts">
-	import { imagesPath } from '../../utils/variables';
 	import { Button, P } from 'flowbite-svelte';
+	import { imagesPath } from '../../utils/variables';
+
 	export let title = 'Something has gone seriously wrong';
 	export let description =
 		"It's always time for a coffee break. We should be back by the time you finish your coffee.";
+
 	export let image = {
 		src: imagesPath('illustrations/500.svg'),
 		alt: 'astronaut'
 	};
+
 	export let btnHref = '/';
 	export let btnTitle = 'Go back home';
 	export let mainClass = 'bg-gray-50 dark:bg-gray-900';
@@ -17,12 +20,19 @@
 		'mb-3 text-2xl font-bold leading-tight text-gray-900 sm:text-4xl lg:text-5xl dark:text-white';
 	export let imgDiv = 'block md:max-w-lg';
 	export let div2Class = 'text-center xl:max-w-4xl';
+
+	// Debugging to check image source
+	console.log('Image source:', image.src);
 </script>
 
 <main class={mainClass}>
 	<div class={mainDivClass}>
 		<div class={imgDiv}>
-			<img src={image.src} alt={image.alt} />
+			{#if image && image.src}
+				<img src={image.src} alt={image.alt} />
+			{:else}
+				<p>Image could not be loaded.</p>
+			{/if}
 		</div>
 		<div class={div2Class}>
 			<h1 class={h1Class}>
@@ -48,25 +58,3 @@
 		</div>
 	</div>
 </main>
-
-<!--
-@component
-[Go to docs](https://pcic_web_application.vercel.app/)
-## Props
-@prop export let title = 'Something has gone seriously wrong';
-@prop export let description =
-		"It's always time for a coffee break. We should be back by the time you finish your coffee.";
-@prop export let image = {
-		src: imagesPath('illustrations/500.svg'),
-		alt: 'astronaut'
-	};
-@prop export let btnHref = '/';
-@prop export let btnTitle = 'Go back home';
-@prop export let mainClass = 'bg-gray-50 dark:bg-gray-900';
-@prop export let mainDivClass =
-		'flex flex-col justify-center items-center px-6 mx-auto h-screen xl:px-0 dark:bg-gray-900';
-@prop export let h1Class =
-		'mb-3 text-2xl font-bold leading-tight text-gray-900 sm:text-4xl lg:text-5xl dark:text-white';
-@prop export let imgDiv = 'block md:max-w-lg';
-@prop export let div2Class = 'text-center xl:max-w-4xl';
--->

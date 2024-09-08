@@ -22,7 +22,7 @@
 <main class={mainClass}>
 	<div class={mainDivClass}>
 		<div class={imgDiv}>
-			<img src={image.src} alt={image.alt} />
+			<enhanced:img src={image.src} alt={image.alt} />
 		</div>
 		<div class={div2Class}>
 			<h1 class={h1Class}>{title}</h1>

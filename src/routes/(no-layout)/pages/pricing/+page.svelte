@@ -1,5 +1,17 @@
 <script lang="ts">
-	import { Button, DarkMode, NavBrand, NavHamburger, NavLi, NavUl, Navbar, Toggle } from 'flowbite-svelte';
+	
+	import logo from '$lib/assets/pcic.svg';
+
+	import {
+		Button,
+		DarkMode,
+		NavBrand,
+		NavHamburger,
+		NavLi,
+		NavUl,
+		Navbar,
+		Toggle
+	} from 'flowbite-svelte';
 	import { ArrowLeftToBracketOutline, CloseOutline } from 'flowbite-svelte-icons';
 	import MetaTag from '../../../utils/MetaTag.svelte';
 	import ComparisonTable from './ComparisonTable.svelte';
@@ -16,9 +28,9 @@
 	$: period = yearly ? 'year' : 'month';
 
 	const path: string = '/pages/pricing';
-  const description: string = 'Pricing example - PCIC Web Dashboard';
-  const title: string = 'PCIC Web Dashboard - Pricing';
-  const subtitle: string = 'Pricing';
+	const description: string = 'Pricing example - PCIC Web Dashboard';
+	const title: string = 'PCIC Web Dashboard - Pricing';
+	const subtitle: string = 'Pricing';
 </script>
 
 <MetaTag {path} {description} {title} {subtitle} />
@@ -28,8 +40,9 @@
 	color="dark"
 >
 	<NavBrand href="/">
-		<img src="/images/Philippine_Crop_Insurance_Corporation_(PCIC).svg" class="me-3 h-6 sm:h-9" alt="PCIC Logo" />
-		<span class="self-center whitespace-nowrap text-xl font-semibold dark:text-white">PCIC Admin Portal</span
+		<enhanced:img src={logo} class="me-3 h-6 sm:h-9" alt="PCIC Logo" />
+		<span class="self-center whitespace-nowrap text-xl font-semibold dark:text-white"
+			>PCIC Admin Portal</span
 		>
 	</NavBrand>
 	<NavHamburger />

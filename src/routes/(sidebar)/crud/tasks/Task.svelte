@@ -10,20 +10,19 @@
 		Textarea
 	} from 'flowbite-svelte';
 	import {
-		CheckCircleOutline,
 		CloseOutline,
 		ExclamationCircleOutline,
 		QuestionCircleOutline
 	} from 'flowbite-svelte-icons';
 	import { onMount } from 'svelte';
-	export let hidden: boolean = true; // modal control
+	export let hidden: boolean = true;
 	export let users: any[] = [];
 	export let selected_task: any = {};
 	export let upsertTask: any = null;
 	export let markAsComplete: any = null;
 	export let clearForm: any = null;
 	export let formView: any;
-	export let regions:any[] = [];
+	export let regions: any[] = [];
 	let filteredUsers: any[] = [...users];
 
 	let task_name: string;
@@ -40,8 +39,11 @@
 	let viewForm = false;
 
 	let ppir_form_initial_columns = [
-		'ppir_assignmentid','ppir_insuranceid','ppir_farmername',
-		'ppir_address', 'ppir_farmertype',
+		'ppir_assignmentid',
+		'ppir_insuranceid',
+		'ppir_farmername',
+		'ppir_address',
+		'ppir_farmertype',
 		'ppir_mobileno',
 		'ppir_groupname',
 		'ppir_groupaddress',
@@ -56,16 +58,23 @@
 		'ppir_area_aci',
 		'ppir_dopds_aci',
 		'ppir_doptp_aci',
-		'ppir_svp_aci',
+		'ppir_svp_aci'
 	];
 
 	const ppir_form_fields = [
-        'ppir_svp_act', 'ppir_variety',
-        'ppir_stagecrop', 'ppir_remarks', 'ppir_name_insured',
-        'ppir_name_iuia', 'ppir_sig_insured', 'ppir_sig_iuia',
-        'ppir_att_1', 'ppir_att_2', 'ppir_att_3', 'ppir_att_4'
-    ];
-
+		'ppir_svp_act',
+		'ppir_variety',
+		'ppir_stagecrop',
+		'ppir_remarks',
+		'ppir_name_insured',
+		'ppir_name_iuia',
+		'ppir_sig_insured',
+		'ppir_sig_iuia',
+		'ppir_att_1',
+		'ppir_att_2',
+		'ppir_att_3',
+		'ppir_att_4'
+	];
 
 	onMount(() => {
 		if (selected_task) {
@@ -81,22 +90,18 @@
 	});
 
 	let editPPIRFormOpen = false;
-    
-    const openEditPPIRForm = () => {
-        editPPIRFormOpen = true;
-    };
 
-    const savePPIRForm = () => {
-        // Here you would typically save the changes to your backend
-        // For now, we'll just close the modal
-        editPPIRFormOpen = false;
-    };
+	const openEditPPIRForm = () => {
+		editPPIRFormOpen = true;
+	};
 
-    // Function to handle null values
-    const handleNullValue = (value: any) => {
-        return value === null || value === undefined || value === '' ? null : value;
-    };
+	const savePPIRForm = () => {
+		editPPIRFormOpen = false;
+	};
 
+	const handleNullValue = (value: any) => {
+		return value === null || value === undefined || value === '' ? null : value;
+	};
 
 	let selected_user: any = null;
 
@@ -154,22 +159,7 @@
 	};
 
 	const getTypeFromPO = (PO: string) => {
-		return `${regions.find((region)=>region.region_code == PO).region_name} PPIR`
-		// switch (PO) {
-		// 	case 'PO4A':
-		// 		return 'Region 04A PPIR';
-		// 	case 'PO4B':
-		// 		return 'Region 04B PPIR';
-		// 	default:
-		// 		if (!PO) {
-		// 			return null;
-		// 		}
-		// 		if (PO.split('O')[1].length > 1) {
-		// 			return 'Region ' + PO.split('O')[1] + ' PPIR';
-		// 		} else {
-		// 			return 'Region 0' + PO.split('O')[1] + ' PPIR';
-		// 		}
-		// }
+		return `${regions.find((region) => region.region_code == PO).region_name} PPIR`;
 	};
 </script>
 
@@ -198,8 +188,11 @@
 		<Label class="space-y-2">
 			<span>Service Group</span>
 			<Select
-			disabled={regions.length == 1}
-			class="border-gray-300 font-normal outline-none" bind:value={service_group} required>
+				disabled={regions.length == 1}
+				class="border-gray-300 font-normal outline-none"
+				bind:value={service_group}
+				required
+			>
 				<option value={null} selected>Select Type</option>
 				<!-- {#each Array.from({ length: 17 }, (_, i) => i) as num}
 					{#if service_group == getPOFromIndex(num + 1)}
@@ -221,7 +214,6 @@
 						{:else}
 							<option value={region.region_code}>{region.region_code}</option>
 						{/if}
-						
 					{/each}
 				{/if}
 			</Select>
@@ -286,42 +278,38 @@
 
 		{#each ppir_form_initial_columns as ppir_col}
 			<Label class="space-y-2">
-				<span>{ppir_col.replaceAll('_',' ')}</span>
+				<span>{ppir_col.replaceAll('_', ' ')}</span>
 				<Input
 					name="title"
 					class="border font-normal outline-none"
-					placeholder="Type {ppir_col.replaceAll('_',' ')}"
+					placeholder="Type {ppir_col.replaceAll('_', ' ')}"
 					bind:value={ppir_form[ppir_col]}
 				/>
 			</Label>
 		{/each}
 
 		{#if selected_task}
-		<Label class="space-y-2">
-			<span>PPIR Form</span>
-			<Button
-				color="green"
-				on:click={() => {
-					open = true;
-					viewForm = true;
-				}}
-				class="mb-2 w-full">View Form</Button
-			>
-			<Button
-				color="blue"
-				on:click={openEditPPIRForm}
-				class="mb-2 w-full">Edit PPIR Form</Button
-			>
-			<Button
-				on:click={() => {
-					open = true;
-					viewForm = false;
-					completeWarning = false;
-				}}
-				color="red"
-				class="mb-2 w-full">Clear Form</Button
-			>
-		</Label>
+			<Label class="space-y-2">
+				<span>PPIR Form</span>
+				<Button
+					color="green"
+					on:click={() => {
+						open = true;
+						viewForm = true;
+					}}
+					class="mb-2 w-full">View Form</Button
+				>
+				<Button color="blue" on:click={openEditPPIRForm} class="mb-2 w-full">Edit PPIR Form</Button>
+				<Button
+					on:click={() => {
+						open = true;
+						viewForm = false;
+						completeWarning = false;
+					}}
+					color="red"
+					class="mb-2 w-full">Clear Form</Button
+				>
+			</Label>
 
 			<!-- {#if selected_task.status != 'completed'} -->
 			<Label class="space-y-2">
@@ -350,16 +338,19 @@
 						task_name = '';
 						return;
 					}
-					const success = await upsertTask({
-						id: selected_task?.id,
-						task_number: task_name,
-						service_group: service_group,
-						service_type: getTypeFromPO(service_group),
-						priority: priority,
-						assignee: selected_user ? selected_user.id : null,
-						status: status,
-						task_type: 'ppir'
-					}, ppir_form);
+					const success = await upsertTask(
+						{
+							id: selected_task?.id,
+							task_number: task_name,
+							service_group: service_group,
+							service_type: getTypeFromPO(service_group),
+							priority: priority,
+							assignee: selected_user ? selected_user.id : null,
+							status: status,
+							task_type: 'ppir'
+						},
+						ppir_form
+					);
 
 					if (success) {
 						hidden = true;
@@ -434,44 +425,43 @@
 	</div>
 </Modal>
 
-
 <!-- Add this new Modal for editing PPIR form -->
 <Modal bind:open={editPPIRFormOpen} size="xl">
-    <h3 class="mb-4 text-xl font-medium text-gray-900 dark:text-white">Edit PPIR Form</h3>
-    <form on:submit|preventDefault={savePPIRForm} class="space-y-4 max-h-[70vh] overflow-y-auto">
-        {#each ppir_form_fields as field}
-            <Label class="block">
-                <span class="text-gray-700">{field.replaceAll('_', ' ').toUpperCase()}</span>
-                {#if field === 'ppir_remarks'}
-                    <Textarea
-                        name={field}
-                        bind:value={ppir_form[field]}
-                        placeholder={field.replaceAll('_', ' ')}
-                        class="mt-1 w-full"
-                        rows="3"
-                    />
-                {:else if field.startsWith('ppir_sig_')}
-                    <p class="text-sm text-gray-500">Signature cannot be edited here</p>
-                {:else if field.startsWith('ppir_att_')}
-                    <p class="text-sm text-gray-500">Attachment cannot be edited here</p>
-                {:else}
-                    <Input
-                        type="text"
-                        name={field}
-                        bind:value={ppir_form[field]}
-                        placeholder={field.replaceAll('_', ' ')}
-                        class="mt-1 w-full"
-                    />
-                {/if}
-            </Label>
-        {/each}
-        <div class="mt-4 flex justify-end space-x-2">
-            <Button type="submit">Save Changes</Button>
-            <Button color="alternative" on:click={() => editPPIRFormOpen = false}>Cancel</Button>
-        </div>
-    </form>
+	<h3 class="mb-4 text-xl font-medium text-gray-900 dark:text-white">Edit PPIR Form</h3>
+	<form on:submit|preventDefault={savePPIRForm} class="max-h-[70vh] space-y-4 overflow-y-auto">
+		{#each ppir_form_fields as field}
+			<Label class="block">
+				<span class="text-gray-700">{field.replaceAll('_', ' ').toUpperCase()}</span>
+				{#if field === 'ppir_remarks'}
+					<Textarea
+						name={field}
+						bind:value={ppir_form[field]}
+						placeholder={field.replaceAll('_', ' ')}
+						class="mt-1 w-full"
+						rows="3"
+					/>
+				{:else if field.startsWith('ppir_sig_')}
+					<p class="text-sm text-gray-500">Signature cannot be edited here</p>
+				{:else if field.startsWith('ppir_att_')}
+					<p class="text-sm text-gray-500">Attachment cannot be edited here</p>
+				{:else}
+					<Input
+						type="text"
+						name={field}
+						bind:value={ppir_form[field]}
+						placeholder={field.replaceAll('_', ' ')}
+						class="mt-1 w-full"
+					/>
+				{/if}
+			</Label>
+		{/each}
+		<div class="mt-4 flex justify-end space-x-2">
+			<Button type="submit">Save Changes</Button>
+			<Button color="alternative" on:click={() => (editPPIRFormOpen = false)}>Cancel</Button>
+		</div>
+	</form>
 </Modal>
 
 {#if selected_task && selected_task.ppir_forms}
-    <p>{handleNullValue(selected_task.ppir_forms.ppir_assignmentid)}</p>
+	<p>{handleNullValue(selected_task.ppir_forms.ppir_assignmentid)}</p>
 {/if}
