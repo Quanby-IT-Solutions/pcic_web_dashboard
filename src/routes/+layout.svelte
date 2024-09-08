@@ -2,10 +2,9 @@
 	import { invalidate } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import modeobserver from './utils/modeobserver';
- 	export let data;
-//   const analyticsId = data.ANALYTICS_ID
+	export let data;
 
-$: ({ session, supabase } = data);
+	$: ({ session, supabase } = data);
 
 	onMount(() => {
 		const { data } = supabase.auth.onAuthStateChange((_, newSession) => {
@@ -19,5 +18,5 @@ $: ({ session, supabase } = data);
 
 	onMount(modeobserver);
 </script>
-<!-- <Runatics {analyticsId} /> idk what dis balikan ko later --> 
+
 <slot />

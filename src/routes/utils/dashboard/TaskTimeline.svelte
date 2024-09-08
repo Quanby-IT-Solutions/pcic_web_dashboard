@@ -193,7 +193,7 @@
 	}
 
 	.custom-scrollbar::-webkit-scrollbar {
-		width: 8px;
+		inline-size: 8px;
 	}
 
 	.custom-scrollbar::-webkit-scrollbar-track {

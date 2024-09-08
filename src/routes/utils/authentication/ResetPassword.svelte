@@ -3,7 +3,7 @@
 	export let title = 'Reset your password';
 	import logo from '$lib/assets/pcic.svg';
 	export let site = {
-		name: 'Flowbite',
+		name: 'PCIC Portal',
 		img: logo,
 		link: '/',
 		imgAlt: 'PCIC Logo'

@@ -23,13 +23,3 @@
 	</ul>
 	<Button class="mt-2 w-fit">{buttonLabel}</Button>
 </Card>
-
-<!--
-@component
-[Go to docs](https://pcic_web_application.vercel.app/)
-## Props
-@prop export let title: string;
-@prop export let subtitle: string = '';
-@prop export let buttonLabel: string = 'Save all';
-@prop export let items: any[] = [];
--->

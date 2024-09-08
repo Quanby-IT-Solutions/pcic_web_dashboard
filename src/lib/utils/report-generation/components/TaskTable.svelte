@@ -14,7 +14,7 @@
 		currentPage,
 		paginatedTasks,
 		taskActiveHeaders,
-		taskSelectedHeaders, // Import this to update when a column is removed
+		taskSelectedHeaders,
 		taskSortCriteria,
 		totalPages
 	} from '../taskStore';
@@ -82,8 +82,6 @@
 		dropdownOpenIndex = dropdownOpenIndex === index ? null : index;
 	};
 </script>
-
-
 
 <Table
 	hoverable={true}

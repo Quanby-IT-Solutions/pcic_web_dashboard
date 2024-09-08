@@ -8,7 +8,11 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "cSpell.words": [
+    "apexcharts",
+    "autotable",
     "cicno",
+    "clazz",
+    "Datas",
     "dopds",
     "doptp",
     "Dribbble",
@@ -18,12 +22,19 @@
     "flowbite",
     "fordispatch",
     "halign",
+    "hoverable",
+    "imgsrc",
     "insuranceid",
     "lenderaddress",
     "lendername",
     "linebreak",
     "mobileno",
+    "modeobserver",
+    "noborder",
     "papaparse",
-    "sortings"
+    "pcss",
+    "socialmedia",
+    "sortings",
+    "themesberg"
   ]
 }

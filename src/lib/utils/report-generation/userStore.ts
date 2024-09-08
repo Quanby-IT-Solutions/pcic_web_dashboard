@@ -1,15 +1,12 @@
-// userStore.ts
-
 import { derived, get, writable } from 'svelte/store';
 import type { HeaderArray, User, UserFilter, UserSortCriteria } from './types';
 
-// Define the headers for the user data table
 export const userDefaultHeaders = writable<HeaderArray>([
-	// 'Region Name',
+	// 'Region Name', - do not remove
+	// 'Role', - do not remove
+	// 'Total Ongoing Tasks', - do not remove
 	'Inspector Name',
-
 	'Mobile Number',
-	// 'Role',
 	'OL',
 	'Mon',
 	'Tue',
@@ -19,7 +16,6 @@ export const userDefaultHeaders = writable<HeaderArray>([
 	'Sat',
 	'Sun',
 	'Total Dispatch Tasks',
-	// 'Total Ongoing Tasks',
 	'Total Completed Tasks',
 	'Total Tasks'
 ]);
@@ -32,7 +28,6 @@ export const userOptionalHeaders = writable<HeaderArray>([
 	'Mobile Number'
 ]);
 
-// Derived stores for combined headers
 export const userActiveHeaders = writable<HeaderArray>([]);
 export const userSelectedHeaders = writable<HeaderArray>([]);
 
@@ -44,13 +39,11 @@ export const userAllHeaders = derived<
 	...$userOptionalHeaders
 ]);
 
-// Initialize userActiveHeaders and userSelectedHeaders
 userDefaultHeaders.subscribe(($userDefaultHeaders) => {
 	userActiveHeaders.set([...$userDefaultHeaders]);
 	userSelectedHeaders.set([...$userDefaultHeaders]);
 });
 
-// Modal state
 export const showUserColumnModal = writable(false);
 export const showUserFilter = writable(false);
 
@@ -64,12 +57,12 @@ export const addUserFilter = () => {
 
 export const removeUserFilter = (index: number) => {
 	userFilters.update((f) => f.filter((_, i) => i !== index));
-	applyUserFilters(); // Re-apply remaining filters
+	applyUserFilters();
 };
 
 export const clearUserFilters = () => {
 	userFilters.set([]);
-	userFilteredData.set(get(originalUserData)); // Reset to original data
+	userFilteredData.set(get(originalUserData));
 };
 
 export const applyUserFilters = () => {
@@ -172,7 +165,6 @@ export const initializeUserFilteredData = (initialData: User[]) => {
 	userFilteredData.set(initialData);
 };
 
-// Pagination related stores
 export const currentUserPage = writable(1);
 export const userPageSize = writable(10);
 

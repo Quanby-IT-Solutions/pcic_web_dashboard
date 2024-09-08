@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { Label, Input, DarkMode } from 'flowbite-svelte';
 	import { goto } from '$app/navigation';
+
+	import logo from '$lib/assets/pcic.svg';
+
 	import SignIn from '../utils/authentication/SignIn.svelte';
 	import MetaTag from '../utils/MetaTag.svelte';
 	import Toast from '../utils/widgets/Toast.svelte';
-
-	import logo from '$lib/assets/pcic.svg';
 
 	let title = 'Sign in to Platform';
 	let site = {

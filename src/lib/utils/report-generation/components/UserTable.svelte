@@ -8,8 +8,7 @@
 		TableHead,
 		TableHeadCell
 	} from 'flowbite-svelte';
-	import { ChevronDownOutline, ChevronUpOutline, TrashBinOutline } from 'flowbite-svelte-icons';
-	import { fade, slide } from 'svelte/transition';
+
 	import {
 		currentUserPage,
 		paginatedUsers,
@@ -18,6 +17,10 @@
 		userSelectedHeaders,
 		userSortCriteria
 	} from '../userStore';
+
+	import { fade, slide } from 'svelte/transition';
+
+	import { ChevronDownOutline, ChevronUpOutline, TrashBinOutline } from 'flowbite-svelte-icons';
 
 	let draggingIndex = -1;
 	let draggingHeader = '';

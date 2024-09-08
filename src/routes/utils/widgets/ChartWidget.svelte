@@ -27,12 +27,3 @@
 		<More title="Sales Report" href="#top" />
 	</div>
 </Card>
-
-<!--
-@component
-[Go to docs](https://pcic_web_application.vercel.app/)
-## Props
-@prop export let title: string = '';
-@prop export let subtitle: string = '';
-@prop export let chartOptions: ApexOptions;
--->

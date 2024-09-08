@@ -1,5 +1,4 @@
 <script lang="ts">
-	
 	import errorLogo from '$lib/assets/illustrations/404.svg';
 
 	import { Button, P } from 'flowbite-svelte';

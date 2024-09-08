@@ -14,7 +14,7 @@
 		currentRegionPage,
 		paginatedRegions,
 		regionActiveHeaders,
-		regionSelectedHeaders, // Import this to update when a column is removed
+		regionSelectedHeaders,
 		regionSortCriteria,
 		totalRegionPages
 	} from '../regionStore';
@@ -67,9 +67,8 @@
 		const removedHeader = headers[index];
 		headers.splice(index, 1);
 		regionActiveHeaders.set(headers);
-		dropdownOpenIndex = null; // Close the dropdown after removing a column
+		dropdownOpenIndex = null;
 
-		// Update the regionSelectedHeaders store
 		const selectedHeaders = [...$regionSelectedHeaders];
 		const headerIndex = selectedHeaders.indexOf(removedHeader);
 		if (headerIndex > -1) {

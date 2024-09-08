@@ -3,7 +3,7 @@
 	import { LockOpenSolid } from 'flowbite-svelte-icons';
 	import logo from '$lib/assets/pcic.svg';
 	export let site = {
-		name: 'Flowbite',
+		name: 'PCIC Portal',
 		img: logo,
 		link: '/',
 		imgAlt: 'PCIC Logo'
@@ -68,7 +68,7 @@
 [Go to docs](https://pcic_web_application.vercel.app/)
 ## Props
 @prop export let site = {
-		name: 'Flowbite',
+		name: 'PCIC Portal',
 		img: '/images/pcic.svg',
 		link: '/',
 		imgAlt: 'PCIC Logo'

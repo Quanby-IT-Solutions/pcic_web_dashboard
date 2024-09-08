@@ -1,7 +1,16 @@
 <script lang="ts">
 	import spinner from '$lib/assets/pcic-spinner.gif';
-	import { onMount } from 'svelte';
 	import TaskTimeline from './TaskTimeline.svelte';
+	import jsPDF from 'jspdf';
+	import autoTable from 'jspdf-autotable';
+	import * as XLSX from 'xlsx';
+	import TaskTable from '$lib/utils/report-generation/components/TaskTable.svelte';
+	import RegionTable from '$lib/utils/report-generation/components/RegionTable.svelte';
+
+	import { FilePdfOutline, TableColumnOutline } from 'flowbite-svelte-icons';
+
+	import { onMount } from 'svelte';
+
 	import { AdjustmentsHorizontalSolid } from 'flowbite-svelte-icons';
 
 	import {
@@ -17,12 +26,6 @@
 		Modal,
 		Select
 	} from 'flowbite-svelte';
-	import jsPDF from 'jspdf';
-	import autoTable from 'jspdf-autotable';
-	import * as XLSX from 'xlsx';
-	import { FilePdfOutline, TableColumnOutline } from 'flowbite-svelte-icons';
-	import TaskTable from '$lib/utils/report-generation/components/TaskTable.svelte';
-	import RegionTable from '$lib/utils/report-generation/components/RegionTable.svelte';
 
 	import {
 		initializeTaskFilteredData,
@@ -30,6 +33,7 @@
 		taskAllHeaders,
 		taskSelectedHeaders
 	} from '$lib/utils/report-generation/taskStore';
+
 	import {
 		initializeRegionFilteredData,
 		regionActiveHeaders,
@@ -393,12 +397,12 @@
 			},
 			styles: {
 				overflow: 'linebreak',
-				cellWidth: 'auto'
+				cellWidth: 'wrap'
 			},
 			margin: { top: 20 },
 			didParseCell: function (data) {
 				if (data.section === 'body' && data.column.index === 1) {
-					data.cell.styles.cellWidth = 'auto';
+					data.cell.styles.cellWidth = 'wrap';
 				}
 			},
 			tableWidth: 'auto'

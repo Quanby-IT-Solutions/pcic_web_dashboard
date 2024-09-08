@@ -14,9 +14,9 @@
 	};
 
 	const path: string = '/authentication/forgot-password';
-  const description: string = 'Forgot password example - PCIC Web Dashboard';
+	const description: string = 'Forgot passwordPCIC Web Dashboard';
 	const title: string = 'PCIC Web Dashboard - Forgot password';
-  const subtitle: string = 'Forgot password';
+	const subtitle: string = 'Forgot password';
 </script>
 
 <MetaTag {path} {description} {title} {subtitle} />

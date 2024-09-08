@@ -5,7 +5,7 @@
 	import MetaTag from '../utils/MetaTag.svelte';
 	const title = 'Reset your password';
 	const site = {
-		name: 'Flowbite',
+		name: 'PCIC Portal',
 		img: logo,
 		link: '/',
 		imgAlt: 'PCIC Logo'
@@ -25,11 +25,11 @@
 		}
 		console.log(data);
 	};
-	
+
 	const path: string = '/authentication/reset-password';
-  const description: string = 'Reset password example - PCIC Web Dashboard';
+	const description: string = 'Reset passwordPCIC Web Dashboard';
 	const metaTitle: string = 'PCIC Web Dashboard - Reset password';
-  const subtitle: string = 'Reset password';
+	const subtitle: string = 'Reset password';
 </script>
 
 <MetaTag {path} {description} title={metaTitle} {subtitle} />

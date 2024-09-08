@@ -1,11 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { imagesPath } from '../../utils/variables';
-	import { Avatar, Dropdown, DropdownDivider, DropdownHeader, DropdownItem } from 'flowbite-svelte';
+	import { Avatar, Dropdown, DropdownHeader, DropdownItem } from 'flowbite-svelte';
 
-	export let name: string = ''; // "Neil Sims",
-	export let avatar: string = ''; // "neil-sims.png",
-	export let email: string = ''; // "neil.sims@flowbite.com",
+	export let name: string = ''; // "sample sample",
+	export let avatar: string = ''; // "sample-sample.png",
+	export let email: string = ''; // "sample.sample@pcic.com",
 	export let signOut: any;
 	export let data;
 	$: ({ supabase } = data);
@@ -37,26 +36,7 @@
 </button>
 <Dropdown placement="bottom-end">
 	<DropdownHeader>
-		<!-- <span class="block text-sm">{name}</span> -->
 		<span class="block truncate text-sm font-medium">{email}</span>
 	</DropdownHeader>
-	<!-- <DropdownItem>Dashboard</DropdownItem> -->
-	<!-- <DropdownItem>Settings</DropdownItem> -->
-	<!-- <DropdownItem>Earnings</DropdownItem> -->
-	<!-- <DropdownDivider /> -->
 	<DropdownItem on:click={signOut}>Sign out</DropdownItem>
 </Dropdown>
-
-<!--
-@component
-[Go to docs](https://pcic_web_application.vercel.app/)
-## Props
-@prop export let id: number = 0;
-@prop export let name: string = '';
-@prop export let avatar: string = '';
-@prop export let email: string = '';
-@prop export let biography: string = '';
-@prop export let position: string = '';
-@prop export let country: string = '';
-@prop export let status: string = '';
--->

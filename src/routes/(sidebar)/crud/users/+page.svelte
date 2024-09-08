@@ -26,7 +26,7 @@
 	let selectedRole = '';
 	let selectedRegion = '';
 	const path = '/crud/users';
-	const description = 'CRUD users example - PCIC Web Dashboard';
+	const description = 'CRUD usersPCIC Web Dashboard';
 	const title = 'PCIC Web Dashboard - CRUD Users';
 	const subtitle = 'CRUD Users';
 	const regions = [

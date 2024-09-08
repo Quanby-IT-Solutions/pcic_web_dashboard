@@ -3,7 +3,7 @@
 	export let title = 'Create a Free Account';
 	import logo from '$lib/assets/pcic.svg';
 	export let site = {
-		name: 'Flowbite1',
+		name: 'PCIC Portal',
 		img: logo,
 		link: '/',
 		imgAlt: 'PCIC Logo'

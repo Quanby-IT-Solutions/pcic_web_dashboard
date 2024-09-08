@@ -2,24 +2,8 @@
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 
-	import {
-		Sidebar,
-		SidebarDropdownWrapper,
-		SidebarGroup,
-		SidebarItem,
-		SidebarWrapper
-	} from 'flowbite-svelte';
-	import {
-		AngleDownOutline,
-		AngleUpOutline,
-		CalendarEditSolid, // Importing a new icon for the Weekly Report
-		ChartPieOutline,
-		CogOutline,
-		FileChartBarSolid,
-		FileWordSolid,
-		UserSettingsSolid,
-		LockSolid
-	} from 'flowbite-svelte-icons';
+	import { Sidebar, SidebarGroup, SidebarItem, SidebarWrapper } from 'flowbite-svelte';
+	import { ChartPieOutline, FileWordSolid, UserSettingsSolid } from 'flowbite-svelte-icons';
 
 	export let drawerHidden: boolean = false;
 
@@ -36,33 +20,17 @@
 	let activeMainSidebar: string;
 
 	afterNavigate((navigation) => {
-		document.getElementById('svelte')?.scrollTo({ top: 0 });
+		document.getElementById('svelte')?.scrollIntoView({ block: 'start' });
 		closeDrawer();
 		activeMainSidebar = navigation.to?.url.pathname ?? '';
 	});
 
 	$: activeMainSidebar = $page.url.pathname;
 
-	let posts = [ 
-
-
+	let posts = [
 		{ name: 'Dashboard', icon: ChartPieOutline, href: '/dashboard' },
 		{ name: 'Users', icon: UserSettingsSolid, href: '/crud/users' },
-		{ name: 'Tasks', icon: FileWordSolid, href: '/crud/tasks' },
-		// Commented out the Authentication Pages section
-		/*
-		{
-			name: 'Authentication Pages',
-			icon: LockSolid,
-			children: {
-				'Sign in': '/authentication/sign-in',
-				'Sign up': '/authentication/sign-up',
-				'Forgot password': '/authentication/forgot-password',
-				'Reset password': '/authentication/reset-password',
-				'Profile lock': '/authentication/profile-lock'
-			}
-		},
-		*/
+		{ name: 'Tasks', icon: FileWordSolid, href: '/crud/tasks' }
 	];
 
 	let dropdowns = Object.fromEntries(posts.map(({ name }) => [name, false]));
@@ -78,39 +46,6 @@
 	<SidebarWrapper
 		divClass="overflow-y-auto px-3 pt-20 lg:pt-5 h-full bg-white scrolling-touch max-w-2xs lg:h-[calc(100vh-4rem)] lg:block dark:bg-gray-800 lg:me-0 lg:sticky top-2"
 	>
-		<!-- <nav class="divide-y divide-gray-200 dark:divide-gray-700">
-			<SidebarGroup ulClass={groupClass} class="mb-3">
-				{#each posts as { name, icon, children, href } (name)}
-					{#if children}
-						<SidebarDropdownWrapper bind:isOpen={dropdowns[name]} label={name} class="pr-3">
-							<AngleDownOutline slot="arrowdown" strokeWidth="3.3" size="sm" />
-							<AngleUpOutline slot="arrowup" strokeWidth="3.3" size="sm" />
-							<svelte:component this={icon} slot="icon" class={iconClass} />
-
-							{#each Object.entries(children) as [title, href]}
-								<SidebarItem
-									label={title}
-									{href}
-									spanClass="ml-9"
-									class={itemClass}
-									active={activeMainSidebar === href}
-								/>
-							{/each}
-						</SidebarDropdownWrapper>
-					{:else}
-						<SidebarItem
-							label={name}
-							{href}
-							spanClass="ml-3"
-							class={itemClass}
-							active={activeMainSidebar === href}
-						>
-							<svelte:component this={icon} slot="icon" class={iconClass} />
-						</SidebarItem>
-					{/if}
-				{/each}
-			</SidebarGroup>
-		</nav> -->
 		<nav class="divide-y divide-gray-200 dark:divide-gray-700">
 			<SidebarGroup ulClass={groupClass} class="mb-3">
 				{#each posts as { name, icon, href } (name)}

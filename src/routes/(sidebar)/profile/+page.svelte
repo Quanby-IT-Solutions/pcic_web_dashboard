@@ -5,7 +5,6 @@
 
 	export let data: PageData;
 
-	// Treat the fetched data as a promise for demonstration
 	const { userProfileData } = data;
 </script>
 
@@ -30,23 +29,11 @@
 					<p class=" text-3xl font-bold text-green-500">{userProfileData.inspector_name}</p>
 					<p class="text-xs font-bold">{userProfileData.role}</p>
 				</div>
-				<!-- Footer -->
 
-				<div class="flex items-center">
-					<!-- <div class="flex items-center gap-1">
-						<MapPinAltOutline size="md" />
-						<span class="text-md font-medium">{userProfileData.regional_id}</span>
-					</div>
-					<div class="flex items-center gap-1">
-						<EnvelopeOutline size="md" />
-						<span class="text-md font-medium">Joined on {userProfileData.created_at}</span>
-					</div> -->
-				</div>
-				<!-- Footer -->
+				<div class="flex items-center"></div>
 			</div>
 		</Card>
 		<div class="">
-			<!-- Contact information here -->
 			<Card title="Social accounts">
 				<div class="flex flex-col gap-4">
 					<h2 class="border-b border-gray-400 py-2 text-lg font-medium dark:border-gray-400">
@@ -57,7 +44,6 @@
 						<span class="text-md font-medium">Email: {userProfileData.email}</span>
 					</div>
 					{#if userProfileData.mobile_number}
-						<!-- content here -->
 						<div class="flex items-center gap-1">
 							<MobilePhoneOutline size="md" />
 							<span class="text-md font-medium">Mobile Number: {userProfileData.mobile_number}</span

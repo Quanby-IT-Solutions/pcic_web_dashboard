@@ -1,24 +1,18 @@
 <script lang="ts">
-	import Accounts from '../../utils/settings/Accounts.svelte';
-	import Alerts from '../../utils/settings/Alerts.svelte';
 	import Emails from '../../utils/settings/Emails.svelte';
 	import GeneralInfo from '../../utils/settings/GeneralInfo.svelte';
 	import LanguageTime from '../../utils/settings/LanguageTime.svelte';
 	import PasswordInfo from '../../utils/settings/PasswordInfo.svelte';
-	import ProfilePicture from '../../utils/settings/ProfilePicture.svelte';
 	import Sessions from '../../utils/settings/Sessions.svelte';
 	import SocialAccounts from '../../utils/settings/SocialAccounts.svelte';
 	import { Breadcrumb, BreadcrumbItem, Heading } from 'flowbite-svelte';
 	import Footer from '../Footer.svelte';
-
-	import { imagesPath } from '../../utils/variables';
-	import Users from '../../data/users.json';
 	import MetaTag from '../../utils/MetaTag.svelte';
 
 	const path: string = '/settings';
-  const description: string = 'Settings example - PCIC Web Dashboard';
-  const title: string = 'PCIC Web Dashboard - Settings';
-  const subtitle: string = 'Settings';
+	const description: string = 'SettingsPCIC Web Dashboard';
+	const title: string = 'PCIC Web Dashboard - Settings';
+	const subtitle: string = 'Settings';
 </script>
 
 <MetaTag {path} {description} {title} {subtitle} />
@@ -40,10 +34,8 @@
 			</Heading>
 		</div>
 		<div class="col-span-full space-y-4 xl:col-auto">
-			<ProfilePicture src={imagesPath(Users[4].avatar, 'users')} />
 			<LanguageTime />
 			<SocialAccounts />
-			<Accounts />
 		</div>
 		<div class="col-span-2 space-y-4">
 			<GeneralInfo />
@@ -52,7 +44,6 @@
 		</div>
 	</div>
 	<div class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2 xl:gap-4">
-		<Alerts />
 		<Emails />
 	</div>
 </main>

@@ -1,13 +1,14 @@
 <script lang="ts">
+	import { Label, Input } from 'flowbite-svelte';
+
 	import logo from '$lib/assets/pcic.svg';
 
-	import { Label, Input } from 'flowbite-svelte';
 	import SignUp from '../utils/authentication/SignUp.svelte';
 	import MetaTag from '../utils/MetaTag.svelte';
 
 	const title = 'Create a Free Account';
 	const site = {
-		name: 'Flowbite',
+		name: 'PCIC Web Dashboard',
 		img: logo,
 		link: '/',
 		imgAlt: 'PCIC Logo'
@@ -30,7 +31,7 @@
 	};
 
 	const path: string = '/authentication/sign-up';
-	const description: string = 'Sign up example - PCIC Web Dashboard';
+	const description: string = 'Sign upPCIC Web Dashboard';
 	const metaTitle: string = 'PCIC Web Dashboard - Sign up';
 	const subtitle: string = 'Sign up';
 </script>

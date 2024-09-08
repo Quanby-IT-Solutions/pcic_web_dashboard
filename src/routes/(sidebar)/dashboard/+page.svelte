@@ -1,8 +1,10 @@
+<!-- src\routes\(sidebar)\dashboard\+page.svelte -->
 <script lang="ts">
 	import Dashboard from '../../utils/dashboard/Dashboard.svelte';
 	import MetaTag from '../../utils/MetaTag.svelte';
-	import Footer from '../Footer.svelte';
-	export let data;
+	import type { PageData } from '$lib/utils/types';
+
+	export let data: PageData;
 
 	const path: string = '/dashboard';
 	const description: string = 'Admin Dashboard';

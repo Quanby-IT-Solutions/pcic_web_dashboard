@@ -9,7 +9,7 @@
 	const colorDown = 'text-red-500 dark:text-red-400';
 
 	export let size: SizeType = 'md';
-	export let equalHeight: boolean = false;
+	export let blockSize: boolean = false;
 
 	const textSize = {
 		xs: 'text-xs',
@@ -43,7 +43,7 @@
 			--
 		{/if}
 	</span>&nbsp;
-	{#if equalHeight}
+	{#if blockSize}
 		<span>{since}</span>
 	{:else}
 		<span class={spanTextSize[size]}>{since}</span>

@@ -1,6 +1,12 @@
-<script>
+<script lang="ts">
+	import { ChevronDownOutline } from 'flowbite-svelte-icons';
+
 	import logo from '$lib/assets/pcic.svg';
+
+	import '../../app.pcss';
+
 	import UserMenu from '../utils/widgets/UserMenu.svelte';
+
 	import {
 		DarkMode,
 		Dropdown,
@@ -12,8 +18,6 @@
 		Navbar,
 		Search
 	} from 'flowbite-svelte';
-	import { ChevronDownOutline } from 'flowbite-svelte-icons';
-	import '../../app.pcss';
 
 	export let fluid = true;
 	export let drawerHidden = false;
@@ -21,7 +25,6 @@
 	export let signOut;
 	export let data;
 
-	// Define the routes you want to display
 	let routes = [
 		{ name: 'Dashboard', icon: 'ChartPieOutline', href: '/dashboard' },
 		{ name: 'Users', icon: 'UserSettingsSolid', href: '/crud/users' },
@@ -31,8 +34,9 @@
 	let searchQuery = '';
 	let filteredRoutes = routes;
 
-	function handleSearch(event) {
-		searchQuery = event.target.value.toLowerCase();
+	function handleSearch(event: Event) {
+		const target = event.target as HTMLInputElement;
+		searchQuery = target.value.toLowerCase();
 		filteredRoutes = routes.filter((route) => route.name.toLowerCase().includes(searchQuery));
 	}
 </script>
@@ -44,13 +48,11 @@
 	let:NavContainer
 >
 	<NavContainer class="mb-px mt-px px-1" {fluid}>
-		<!-- Hamburger Menu for Mobile -->
 		<NavHamburger
 			onClick={() => (drawerHidden = !drawerHidden)}
 			class="m-0 me-3 text-gray-900 dark:text-gray-100 md:block lg:hidden"
 		/>
 
-		<!-- Brand Logo and Title -->
 		<NavBrand href="/" class={list ? 'w-40' : 'lg:w-60'}>
 			<img src={logo} class="me-2.5 h-6 sm:h-8" alt="PCIC Logo" />
 			<span
@@ -60,7 +62,6 @@
 			</span>
 		</NavBrand>
 
-		<!-- Navigation Links or Search Bar -->
 		<div class="relative hidden lg:block lg:ps-3">
 			{#if list}
 				<NavUl
@@ -115,7 +116,6 @@
 			{/if}
 		</div>
 
-		<!-- Dark Mode Toggle and User Menu -->
 		<div class="ms-auto flex items-center text-gray-500 dark:text-gray-400 sm:order-2">
 			<DarkMode />
 			<UserMenu {data} {signOut} />

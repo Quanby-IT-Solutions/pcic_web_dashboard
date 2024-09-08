@@ -23,10 +23,3 @@
 		</div>
 	</div>
 </Card>
-
-<!--
-@component
-[Go to docs](https://pcic_web_application.vercel.app/)
-## Props
-@prop export let src: string;
--->
