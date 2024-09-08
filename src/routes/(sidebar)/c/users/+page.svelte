@@ -25,10 +25,10 @@
 	let searchQuery = '';
 	let selectedRole = '';
 	let selectedRegion = '';
-	const path = '/crud/users';
-	const description = 'CRUD usersPCIC Web Dashboard';
-	const title = 'PCIC Web Dashboard - CRUD Users';
-	const subtitle = 'CRUD Users';
+	const path = '/c/users';
+	const description = 'PCIC Web Dashboard';
+	const title = 'PCIC Web Dashboard';
+	const subtitle = '';
 	const regions = [
 		'Region 1',
 		'Region 2',

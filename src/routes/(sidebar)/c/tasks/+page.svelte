@@ -29,9 +29,9 @@
 		hidden = !hidden;
 	};
 
-	const path: string = '/crud/tasks';
+	const path: string = '/c/tasks';
 	const description: string = 'CRUD productsPCIC Web Dashboard';
-	const title: string = 'PCIC Web Dashboard - CRUD Products';
+	const title: string = 'PCIC Web Dashboard';
 	const subtitle: string = 'CRUD Products';
 	let transitionParams = {
 		x: 320,

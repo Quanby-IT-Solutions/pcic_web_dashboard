@@ -61,7 +61,7 @@
 <MetaTag
 	path="/authentication/sign-in"
 	description="Sign In - PCIC Web Dashboard"
-	title="PCIC Web Dashboard - Sign in"
+	title="PCIC Web Dashboard"
 	subtitle="Sign in"
 />
 

@@ -29,8 +29,8 @@
 
 	let posts = [
 		{ name: 'Dashboard', icon: ChartPieOutline, href: '/dashboard' },
-		{ name: 'Users', icon: UserSettingsSolid, href: '/crud/users' },
-		{ name: 'Tasks', icon: FileWordSolid, href: '/crud/tasks' }
+		{ name: 'Users', icon: UserSettingsSolid, href: '/c/users' },
+		{ name: 'Tasks', icon: FileWordSolid, href: '/c/tasks' }
 	];
 
 	let dropdowns = Object.fromEntries(posts.map(({ name }) => [name, false]));
