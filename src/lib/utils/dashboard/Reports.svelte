@@ -1,9 +1,9 @@
 <script lang="ts">
 	import spinner from '$lib/assets/pcic-spinner.gif';
-	import TaskTimeline from './TaskTimeline.svelte';
 	import jsPDF from 'jspdf';
 	import autoTable from 'jspdf-autotable';
 	import * as XLSX from 'xlsx';
+	import TaskTimeline from './TaskTimeline.svelte';
 
 	import { FilePdfOutline, TableColumnOutline } from 'flowbite-svelte-icons';
 
@@ -12,17 +12,17 @@
 	import { AdjustmentsHorizontalSolid } from 'flowbite-svelte-icons';
 
 	import {
+		Button,
+		Checkbox,
+		Heading,
+		Modal,
+		Select,
 		Table,
 		TableBody,
 		TableBodyCell,
 		TableBodyRow,
 		TableHead,
-		TableHeadCell,
-		Heading,
-		Button,
-		Checkbox,
-		Modal,
-		Select
+		TableHeadCell
 	} from 'flowbite-svelte';
 
 	import {
@@ -32,14 +32,15 @@
 		taskSelectedHeaders
 	} from '$lib/utils/_data/taskStore';
 
+	import { browser } from '$app/environment';
 	import {
 		initializeRegionFilteredData,
 		regionActiveHeaders,
 		regionAllHeaders,
 		regionSelectedHeaders
 	} from '$lib/utils/_data/regionStore';
-	import TaskTable from '../report-generation/components/TaskTable.svelte';
 	import RegionTable from '../report-generation/components/RegionTable.svelte';
+	import TaskTable from '../report-generation/components/TaskTable.svelte';
 
 	let showActivity = false;
 	let selectedUserId: string | null = null;
@@ -109,10 +110,11 @@
 	async function fetchInspectors() {
 		isLoading = true;
 		try {
-			const { data: users, error: usersError } = await supabase
-				.from('users')
-				.select(
-					`
+			const [usersResponse, tasksResponse] = await Promise.all([
+				supabase
+					.from('users')
+					.select(
+						`
                     id, 
                     inspector_name, 
                     mobile_number, 
@@ -122,26 +124,16 @@
                         region_name
                     )
                 `
-				)
-				.eq('role', 'Agent');
+					)
+					.eq('role', 'Agent'),
+				supabase.from('tasks').select('id, assignee, status, created_at')
+			]);
 
-			if (usersError) {
-				dataError = usersError.message;
-				console.error('Error fetching users:', usersError);
-				isLoading = false;
-				return;
-			}
+			if (usersResponse.error) throw new Error(usersResponse.error.message);
+			if (tasksResponse.error) throw new Error(tasksResponse.error.message);
 
-			const { data: tasks, error: tasksError } = await supabase
-				.from('tasks')
-				.select('id, assignee, status, created_at');
-
-			if (tasksError) {
-				dataError = tasksError.message;
-				console.error('Error fetching tasks:', tasksError);
-				isLoading = false;
-				return;
-			}
+			const users = usersResponse.data;
+			const tasks = tasksResponse.data;
 
 			const today = new Date();
 			const { start: startOfWeek, end: endOfWeek } = getStartAndEndOfWeek(
@@ -149,6 +141,8 @@
 				selectedMonth,
 				today.getFullYear()
 			);
+
+			const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 			inspectors = users.map(
 				(user: {
@@ -168,7 +162,6 @@
 						(task: { status: string }) => task.status === 'ongoing'
 					).length;
 
-					const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 					const tasksByDay = weekDays.map((day, index) => {
 						const dayStart = new Date(startOfWeek);
 						dayStart.setDate(startOfWeek.getDate() + index);
@@ -188,7 +181,7 @@
 						name: user.inspector_name,
 						mobile: user.mobile_number,
 						online: user.is_online,
-						...tasksByDay.reduce((acc, count, index) => ({ ...acc, [weekDays[index]]: count }), {}),
+						...Object.fromEntries(weekDays.map((day, index) => [day, tasksByDay[index]])),
 						totalDispatch,
 						completed,
 						backlogs,
@@ -200,8 +193,9 @@
 		} catch (error) {
 			dataError = (error as Error).message;
 			console.error('Error:', error);
+		} finally {
+			isLoading = false;
 		}
-		isLoading = false;
 	}
 
 	function handleRowClick(userId: string) {
@@ -433,8 +427,10 @@
 	};
 
 	onMount(() => {
+		if (browser) {
+			fetchInspectors();
+		}
 		updateWeekOptions();
-		fetchInspectors();
 	});
 
 	const headers = [
