@@ -6,8 +6,9 @@
 	import 'mapbox-gl/dist/mapbox-gl.css';
 	import mapboxgl from 'mapbox-gl';
 
-	export let userId: string;
+	export let userId: string;  // Ensure this prop is provided
 
+	// Interface for the user logs fetched from Supabase
 	interface SupabaseLog {
 		timestamp: string;
 		activity: string;
@@ -15,6 +16,7 @@
 		longlat: string | null;
 	}
 
+	// State variables
 	let userLogs: SupabaseLog[] = [];
 	let isLoading = true;
 	let dataError: string | null = null;
@@ -23,9 +25,11 @@
 
 	const dispatch = createEventDispatcher();
 
+	// Mapbox access token
 	mapboxgl.accessToken =
 		'pk.eyJ1IjoicXVhbmJ5ZGV2cyIsImEiOiJjbHplNmtybm4wbHZsMmlva3pkbDY2bG1yIn0.I-82-7hu310FPXYvKTIMMQ';
 
+	// Fetch user logs from Supabase
 	async function fetchUserLogs() {
 		try {
 			const { data, error } = await supabase_content
@@ -49,6 +53,7 @@
 		}
 	}
 
+	// Initialize the map
 	function initializeMap() {
 		// Detect if the user prefers dark mode
 		const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -68,11 +73,13 @@
 		}
 	}
 
+	// Update the map location
 	function updateMapLocation(longlat: string | null) {
 		if (!map || !longlat) return;
 
 		const [lat, lng] = longlat.split(',').map(Number);
 
+		// Validate coordinates
 		if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
 			console.error('Invalid latitude or longitude values:', { lat, lng });
 			return;
@@ -102,10 +109,12 @@
 		}
 	});
 
+	// Function to go back to the previous screen
 	function goBack() {
 		dispatch('back');
 	}
 
+	// Fetch user logs and initialize the map on mount
 	onMount(() => {
 		fetchUserLogs().then(() => {
 			if (userLogs.length > 0) {
@@ -115,6 +124,7 @@
 	});
 </script>
 
+<!-- UI Structure -->
 <div class="flex h-screen w-full flex-col">
 	<div class="flex items-center justify-between p-4">
 		<button
@@ -128,10 +138,12 @@
 	</div>
 
 	{#if isLoading}
+		<!-- Loading Spinner -->
 		<div class="flex flex-grow items-center justify-center">
-			<enhanced:img src={spinner} alt="Loading..." class="h-16 w-16" />
+			<img src={spinner} alt="Loading..." class="h-16 w-16" />
 		</div>
 	{:else if dataError || userLogs.length === 0}
+		<!-- Error or No Data Message -->
 		<div class="flex flex-grow flex-col items-center justify-center p-8 text-center">
 			<AlertCircle size={48} class="mb-4 text-yellow-400" />
 			<h2 class="mb-2 text-2xl font-bold">No Timeline Data Available</h2>
@@ -141,6 +153,7 @@
 			</p>
 		</div>
 	{:else}
+		<!-- User Logs and Map -->
 		<div class="flex flex-grow overflow-hidden">
 			<div class="custom-scrollbar w-1/2 overflow-y-auto p-4">
 				{#each userLogs as log}
@@ -174,6 +187,7 @@
 				{/each}
 			</div>
 
+			<!-- Map Container -->
 			<div id="map" class="h-full w-1/2"></div>
 		</div>
 	{/if}
