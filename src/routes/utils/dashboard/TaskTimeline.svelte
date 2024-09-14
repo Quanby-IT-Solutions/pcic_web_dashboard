@@ -5,8 +5,9 @@
 	import { User, AlertCircle, ArrowLeft } from 'lucide-svelte';
 	import 'mapbox-gl/dist/mapbox-gl.css';
 	import mapboxgl from 'mapbox-gl';
+	import { DarkMode } from 'flowbite-svelte';
 
-	export let userId: string;  // Ensure this prop is provided
+	export let userId: string; // Ensure this prop is provided
 
 	// Interface for the user logs fetched from Supabase
 	interface SupabaseLog {
@@ -62,13 +63,21 @@
 			: 'mapbox://styles/mapbox/light-v10';
 
 		if (userLogs.length > 0 && userLogs[0].longlat) {
-			const [lat, lng] = userLogs[0].longlat.split(',').map(Number);
+			const [lng, lat] = userLogs[0].longlat.split(',').map(Number); // Swapped order
+
+			// Validate coordinates before using them
+			if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+				console.error('Invalid latitude or longitude values:', { lat, lng });
+				return;
+			}
+
 			map = new mapboxgl.Map({
 				container: 'map',
 				style: mapStyle,
 				center: [lng, lat],
 				zoom: 12
 			});
+
 			updateMapLocation(userLogs[0].longlat);
 		}
 	}
@@ -77,7 +86,7 @@
 	function updateMapLocation(longlat: string | null) {
 		if (!map || !longlat) return;
 
-		const [lat, lng] = longlat.split(',').map(Number);
+		const [lng, lat] = longlat.split(',').map(Number); // Swapped order
 
 		// Validate coordinates
 		if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
