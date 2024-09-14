@@ -1,5 +1,5 @@
 import { derived, get, writable } from 'svelte/store';
-import type { HeaderArray, Region, RegionFilter, RegionSortCriteria } from './types';
+import type { HeaderArray, Region, RegionFilter, RegionSortCriteria } from './regionTypes';
 
 // Default headers for regions
 export const regionDefaultHeaders = writable<HeaderArray>([

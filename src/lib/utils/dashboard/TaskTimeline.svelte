@@ -1,11 +1,10 @@
 <script lang="ts">
 	import spinner from '$lib/assets/pcic-spinner.gif';
 	import { onMount, createEventDispatcher } from 'svelte';
-	import { supabase_content } from '../../../supabase';
 	import { User, AlertCircle, ArrowLeft } from 'lucide-svelte';
 	import 'mapbox-gl/dist/mapbox-gl.css';
 	import mapboxgl from 'mapbox-gl';
-	import { DarkMode } from 'flowbite-svelte';
+	import { supabase_content } from '../../../supabase';
 
 	export let userId: string; // Ensure this prop is provided
 

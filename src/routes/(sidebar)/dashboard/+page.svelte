@@ -1,7 +1,7 @@
 <!-- src\routes\(sidebar)\dashboard\+page.svelte -->
 <script lang="ts">
-	import Dashboard from '../../utils/dashboard/Dashboard.svelte';
-	import MetaTag from '../../utils/MetaTag.svelte';
+	import Dashboard from '$lib/utils/dashboard/Dashboard.svelte';
+	import MetaTag from '$lib/utils/general/MetaTag.svelte';
 	import type { PageData } from '$lib/utils/types';
 
 	export let data: PageData;

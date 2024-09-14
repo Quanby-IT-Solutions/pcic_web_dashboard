@@ -10,7 +10,7 @@
 		Button
 	} from 'flowbite-svelte';
 	import { EditOutline, TrashBinSolid } from 'flowbite-svelte-icons';
-	import { imagesPath } from '../../../utils/variables';
+	import { imagesPath } from '../variables';
 
 	export let users: any[];
 	export let onEditUser: (user: any) => void;

@@ -1,5 +1,5 @@
 import { derived, get, writable } from 'svelte/store';
-import type { HeaderArray, User, UserFilter, UserSortCriteria } from './types';
+import type { HeaderArray, User, UserFilter, UserSortCriteria } from './regionTypes';
 
 export const userDefaultHeaders = writable<HeaderArray>([
 	// 'Region Name', - do not remove

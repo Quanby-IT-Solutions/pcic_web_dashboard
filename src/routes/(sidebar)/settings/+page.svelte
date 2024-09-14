@@ -1,13 +1,13 @@
 <script lang="ts">
-	import Emails from '../../utils/settings/Emails.svelte';
-	import GeneralInfo from '../../utils/settings/GeneralInfo.svelte';
-	import LanguageTime from '../../utils/settings/LanguageTime.svelte';
-	import PasswordInfo from '../../utils/settings/PasswordInfo.svelte';
-	import Sessions from '../../utils/settings/Sessions.svelte';
-	import SocialAccounts from '../../utils/settings/SocialAccounts.svelte';
+	import Emails from '$lib/utils/settings/Emails.svelte';
+	import GeneralInfo from '$lib/utils/settings/GeneralInfo.svelte';
+	import LanguageTime from '$lib/utils/settings/LanguageTime.svelte';
+	import PasswordInfo from '$lib/utils/settings/PasswordInfo.svelte';
+	import Sessions from '$lib/utils/settings/Sessions.svelte';
+	import SocialAccounts from '$lib/utils/settings/SocialAccounts.svelte';
 	import { Breadcrumb, BreadcrumbItem, Heading } from 'flowbite-svelte';
-	import Footer from '../Footer.svelte';
-	import MetaTag from '../../utils/MetaTag.svelte';
+	import Footer from '$lib/utils/general/Footer.svelte';
+	import MetaTag from '$lib/utils/general/MetaTag.svelte';
 
 	const path: string = '/settings';
 	const description: string = 'SettingsPCIC Web Dashboard';

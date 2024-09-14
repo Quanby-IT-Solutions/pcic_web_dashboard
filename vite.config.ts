@@ -7,6 +7,9 @@ export default defineConfig({
 	ssr: {
 		noExternal: ['flowbite-svelte']
 	},
+	optimizeDeps: {
+		exclude: ['chunk-BLHMZ75E']
+	},
 	test: {
 		include: ['src/**/*.{test,spec}.{js,ts}']
 	}

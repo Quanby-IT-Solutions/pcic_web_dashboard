@@ -17,7 +17,7 @@
 		regionSelectedHeaders,
 		regionSortCriteria,
 		totalRegionPages
-	} from '../regionStore';
+	} from '../../_data/regionStore';
 
 	let draggingIndex = -1;
 	let draggingHeader = '';

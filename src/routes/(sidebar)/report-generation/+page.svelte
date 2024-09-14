@@ -18,7 +18,7 @@
 		taskOperators,
 		taskSelectedHeaders,
 		taskSortCriteria
-	} from '$lib/utils/report-generation/taskStore';
+	} from '$lib/utils/_data/taskStore';
 
 	import {
 		addUserFilter,
@@ -38,7 +38,7 @@
 		userOperators,
 		userSelectedHeaders,
 		userSortCriteria
-	} from '$lib/utils/report-generation/userStore';
+	} from '$lib/utils/_data/userStore';
 
 	import { Button, Checkbox, Input, Modal, Select, Toggle } from 'flowbite-svelte';
 	import {
@@ -71,8 +71,8 @@
 		removeRegionSortCriteria, // Add this
 		showRegionFilter,
 		showRegionSorting
-	} from '$lib/utils/report-generation/regionStore';
-	import { selectedTable, showColumnModal } from '$lib/utils/report-generation/tableStore';
+	} from '$lib/utils/_data/regionStore';
+	import { selectedTable, showColumnModal } from '$lib/utils/_data/tableStore';
 
 	import type { Task, User } from '$lib/utils/types';
 	import jsPDF from 'jspdf';
@@ -84,14 +84,12 @@
 	import { slide } from 'svelte/transition';
 
 	import TaskTable from '$lib/utils/report-generation/components/TaskTable.svelte';
-	import type { Region } from '$lib/utils/report-generation/types';
+	import type { Region } from '$lib/utils/_data/regionTypes';
 	import { get } from 'svelte/store';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
 	const { tasks, users, regions, userCurrentRegion } = data;
-
-	let selectedView = 'Tasks';
 
 	onMount(() => {
 		initializeTaskFilteredData(tasks);

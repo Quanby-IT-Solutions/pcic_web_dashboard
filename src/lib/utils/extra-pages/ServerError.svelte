@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Button, P } from 'flowbite-svelte';
-	import { imagesPath } from '../../utils/variables';
+	import { imagesPath } from '../variables';
 
 	export let title = 'Something has gone seriously wrong';
 	export let description =

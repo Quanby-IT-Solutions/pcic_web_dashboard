@@ -1,10 +1,10 @@
 <script lang="ts">
 	import '../app.pcss';
 	import { page } from '$app/stores';
-	import NotFound from './utils/pages/NotFound.svelte';
-	import Maintenance from './utils/pages/Maintenance.svelte';
-	import ServerError from './utils/pages/ServerError.svelte';
-	import MetaTag from './utils/MetaTag.svelte';
+	import NotFound from '$lib/utils/extra-pages/NotFound.svelte';
+	import Maintenance from '$lib/utils/extra-pages/Maintenance.svelte';
+	import ServerError from '$lib/utils/extra-pages/ServerError.svelte';
+	import MetaTag from '$lib/utils/general/MetaTag.svelte';
 
 	type ErrorCode = 400 | 404 | 500;
 

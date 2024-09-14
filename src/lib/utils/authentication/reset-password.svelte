@@ -1,8 +1,8 @@
 <script lang="ts">
 	import logo from '$lib/assets/pcic.svg';
 	import { Label, Input } from 'flowbite-svelte';
-	import ResetPassword from '../utils/authentication/ResetPassword.svelte';
-	import MetaTag from '../utils/MetaTag.svelte';
+	import ResetPassword from '$lib/utils/authentication/ResetPassword.svelte';
+	import MetaTag from '$lib/utils/general/MetaTag.svelte';
 	const title = 'Reset your password';
 	const site = {
 		name: 'PCIC Portal',

@@ -17,7 +17,7 @@
 		taskSelectedHeaders,
 		taskSortCriteria,
 		totalPages
-	} from '../taskStore';
+	} from '$lib/utils/_data/taskStore';
 
 	let draggingIndex = -1;
 	let draggingHeader = '';
