@@ -8,7 +8,9 @@
 		TableBodyCell,
 		TableHeadCell,
 		Checkbox,
-		Button
+		Button,
+		Input,
+		Select
 	} from 'flowbite-svelte';
 
 	import {
@@ -21,23 +23,43 @@
 	} from 'flowbite-svelte-icons';
 
 	import { createEventDispatcher } from 'svelte';
-	import Pagination from '$lib/utils/dashboard/Pagination.svelte';
 
 	const dispatch = createEventDispatcher();
 
 	export let filteredTasks: any[];
 	export let selectedTasks: any[];
-	export let currentPage: number;
-	export let maxPageItems: number;
 	export let sortings: string[];
 	export let setStatusColor: (status: string) => string;
 	export let setPriorityColor: (priority: string) => string;
 
-	$: totalPages = Math.ceil(filteredTasks.length / maxPageItems);
-	$: displayedTasks = filteredTasks.slice(
-		(currentPage - 1) * maxPageItems,
-		currentPage * maxPageItems
-	);
+	// New pagination variables
+	let currentPage = 1;
+	let itemsPerPage = 10;
+	let paginatedTasks: any[] = [];
+
+	$: {
+		paginateTasks();
+	}
+
+	function paginateTasks() {
+		const startIndex = (currentPage - 1) * itemsPerPage;
+		const endIndex = startIndex + itemsPerPage;
+		paginatedTasks = filteredTasks.slice(startIndex, endIndex);
+	}
+
+	function handleNextPage() {
+		if (currentPage * itemsPerPage < filteredTasks.length) {
+			currentPage += 1;
+			paginateTasks();
+		}
+	}
+
+	function handlePreviousPage() {
+		if (currentPage > 1) {
+			currentPage -= 1;
+			paginateTasks();
+		}
+	}
 
 	function selectTasks(task: any) {
 		dispatch('selectTasks', task);
@@ -94,7 +116,7 @@
 				{/each}
 			</TableHead>
 			<TableBody>
-				{#if displayedTasks.length === 0}
+				{#if paginatedTasks.length === 0}
 					<TableBodyRow>
 						<TableBodyCell colspan="9" class="py-4 text-center">
 							<img
@@ -107,7 +129,7 @@
 						</TableBodyCell>
 					</TableBodyRow>
 				{:else}
-					{#each displayedTasks as task}
+					{#each paginatedTasks as task}
 						<TableBodyRow>
 							<TableBodyCell class="!p-4">
 								<Checkbox
@@ -164,7 +186,19 @@
 			</TableBody>
 		</Table>
 	</div>
-	<div class="flex justify-center">
-		<Pagination bind:currentPage {totalPages} />
+	<div class="mt-4 flex items-center justify-between">
+		<Button color="blue" on:click={handlePreviousPage} disabled={currentPage === 1}>
+			Previous
+		</Button>
+		<span class="text-gray-400"
+			>Page {currentPage} of {Math.ceil(filteredTasks.length / itemsPerPage)}</span
+		>
+		<Button
+			color="blue"
+			on:click={handleNextPage}
+			disabled={currentPage * itemsPerPage >= filteredTasks.length}
+		>
+			Next
+		</Button>
 	</div>
 </div>

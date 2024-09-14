@@ -987,8 +987,6 @@
 			<TaskTable
 				{filteredTasks}
 				{selectedTasks}
-				{currentPage}
-				{maxPageItems}
 				{sortings}
 				{setStatusColor}
 				{setPriorityColor}
