@@ -2,7 +2,7 @@
 	import no_user from '$lib/assets/no-user.png';
 	import { Button, Input, Label, Modal, Select } from 'flowbite-svelte';
 	import { createEventDispatcher, onMount } from 'svelte';
-	import Alert from '../../../utils/widgets/alert.svelte';
+	import Alert from '$lib/utils/widgets/alert.svelte';
 
 	export let open: boolean = false;
 	export let data: any;

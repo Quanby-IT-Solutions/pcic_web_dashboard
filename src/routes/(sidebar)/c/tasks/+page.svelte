@@ -8,14 +8,14 @@
 	import jsPDF from 'jspdf';
 	import Papa from 'papaparse';
 
-	import Task from './Task.svelte';
-	import Delete from './Delete.svelte';
-	import Toast from '../../../utils/widgets/Toast.svelte';
-	import MetaTag from '../../../utils/MetaTag.svelte';
-	import TaskToolbar from './TaskToolbar.svelte';
-	import TaskTable from './TaskTable.svelte';
-	import SyncModal from './SyncModal.svelte';
-	import ConfirmationModal from './ConfirmationModal.svelte';
+	import Task from '$lib/utils/tasks/Task.svelte';
+	import Delete from '$lib/utils/tasks/Delete.svelte';
+	import Toast from '$lib/utils/widgets/Toast.svelte';
+	import MetaTag from '$lib/utils/general/MetaTag.svelte';
+	import TaskToolbar from '$lib/utils/tasks/TaskToolbar.svelte';
+	import TaskTable from '$lib/utils/tasks/TaskTable.svelte';
+	import SyncModal from '$lib/utils/tasks/SyncModal.svelte';
+	import ConfirmationModal from '$lib/utils/tasks/ConfirmationModal.svelte';
 
 	let isSyncing = false;
 	let isScanning = false;

@@ -1,9 +1,9 @@
 <!-- src\routes\(sidebar)\layouts\sidebar\+page.svelte -->
 <script lang="ts">
 	import type { PageData } from '$lib/utils/types';
-	import Dashboard from '../../../utils/dashboard/Dashboard.svelte';
-	import MetaTag from '../../../utils/MetaTag.svelte';
-	import Footer from '../../Footer.svelte';
+	import Dashboard from '$lib/utils/dashboard/Dashboard.svelte';
+	import MetaTag from '$lib/utils/general/MetaTag.svelte';
+	import Footer from '$lib/utils/general/Footer.svelte';
 	export let data: PageData;
 
 	const path: string = '/layouts/sidebar';

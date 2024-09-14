@@ -4,11 +4,13 @@
 	import { onMount } from 'svelte';
 	import { Button, Heading, Input, Select } from 'flowbite-svelte';
 	import { PlusOutline } from 'flowbite-svelte-icons';
-	import User from './User.svelte';
-	import Delete from './Delete.svelte';
-	import Toast from '../../../utils/widgets/Toast.svelte';
-	import MetaTag from '../../../utils/MetaTag.svelte';
-	import UserList from './UserList.svelte';
+
+	import User from '$lib/utils/users/User.svelte';
+	import UserList from '$lib/utils/users/UserList.svelte';
+
+	import Delete from '$lib/utils/users/Delete.svelte';
+	import Toast from '$lib/utils/widgets/Toast.svelte';
+	import MetaTag from '$lib/utils/general/MetaTag.svelte';
 
 	export let data;
 	$: ({ supabase } = data);

@@ -1,5 +1,5 @@
 import { derived, get, writable } from 'svelte/store';
-import type { HeaderArray, Task, TaskFilter, TaskSortCriteria } from './types';
+import type { HeaderArray, Task, TaskFilter, TaskSortCriteria } from './regionTypes';
 
 export const taskDefaultHeaders = writable<HeaderArray>([
 	'Region',

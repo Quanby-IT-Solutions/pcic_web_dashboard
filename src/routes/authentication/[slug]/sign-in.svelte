@@ -3,10 +3,9 @@
 	import { goto } from '$app/navigation';
 
 	import logo from '$lib/assets/pcic.svg';
-
-	import SignIn from '../utils/authentication/SignIn.svelte';
-	import MetaTag from '../utils/MetaTag.svelte';
-	import Toast from '../utils/widgets/Toast.svelte';
+	import MetaTag from '$lib/utils/general/MetaTag.svelte';
+	import SignIn from '$lib/utils/authentication/SignIn.svelte';
+	import Toast from '$lib/utils/widgets/Toast.svelte';
 
 	let title = 'Sign in to Platform';
 	let site = {

@@ -16,7 +16,7 @@
 		userActiveHeaders,
 		userSelectedHeaders,
 		userSortCriteria
-	} from '../userStore';
+	} from '$lib/utils/_data/userStore';
 
 	import { fade, slide } from 'svelte/transition';
 

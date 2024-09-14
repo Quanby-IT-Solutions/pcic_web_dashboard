@@ -4,8 +4,6 @@
 	import jsPDF from 'jspdf';
 	import autoTable from 'jspdf-autotable';
 	import * as XLSX from 'xlsx';
-	import TaskTable from '$lib/utils/report-generation/components/TaskTable.svelte';
-	import RegionTable from '$lib/utils/report-generation/components/RegionTable.svelte';
 
 	import { FilePdfOutline, TableColumnOutline } from 'flowbite-svelte-icons';
 
@@ -32,14 +30,16 @@
 		taskActiveHeaders,
 		taskAllHeaders,
 		taskSelectedHeaders
-	} from '$lib/utils/report-generation/taskStore';
+	} from '$lib/utils/_data/taskStore';
 
 	import {
 		initializeRegionFilteredData,
 		regionActiveHeaders,
 		regionAllHeaders,
 		regionSelectedHeaders
-	} from '$lib/utils/report-generation/regionStore';
+	} from '$lib/utils/_data/regionStore';
+	import TaskTable from '../report-generation/components/TaskTable.svelte';
+	import RegionTable from '../report-generation/components/RegionTable.svelte';
 
 	let showActivity = false;
 	let selectedUserId: string | null = null;

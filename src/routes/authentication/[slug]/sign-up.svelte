@@ -3,8 +3,8 @@
 
 	import logo from '$lib/assets/pcic.svg';
 
-	import SignUp from '../utils/authentication/SignUp.svelte';
-	import MetaTag from '../utils/MetaTag.svelte';
+	import SignUp from '$lib/utils/authentication/SignUp.svelte';
+	import MetaTag from '$lib/utils/general/MetaTag.svelte';
 
 	const title = 'Create a Free Account';
 	const site = {
@@ -31,7 +31,7 @@
 	};
 
 	const path: string = '/authentication/sign-up';
-	const description: string = 'Sign upPCIC Web Dashboard';
+	const description: string = 'Sign up PCIC Web Dashboard';
 	const metaTitle: string = 'PCIC Web Dashboard - Sign up';
 	const subtitle: string = 'Sign up';
 </script>

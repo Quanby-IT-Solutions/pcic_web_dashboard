@@ -21,7 +21,7 @@
 	} from 'flowbite-svelte-icons';
 
 	import { createEventDispatcher } from 'svelte';
-	import Pagination from '../../../utils/dashboard/Pagination.svelte';
+	import Pagination from '$lib/utils/dashboard/Pagination.svelte';
 
 	const dispatch = createEventDispatcher();
 
@@ -98,7 +98,7 @@
 					<TableBodyRow>
 						<TableBodyCell colspan="9" class="py-4 text-center">
 							<img
-								src="/empty-box.png"
+								src=""
 								alt="No tasks available"
 								class="mx-auto mb-2"
 								style="inline-size: 100px; block-size: auto;"

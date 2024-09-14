@@ -3,9 +3,7 @@
 
 	import logo from '$lib/assets/pcic.svg';
 
-	import '../../app.pcss';
-
-	import UserMenu from '../utils/widgets/UserMenu.svelte';
+	// import '../../app.pcss';
 
 	import {
 		DarkMode,
@@ -18,6 +16,7 @@
 		Navbar,
 		Search
 	} from 'flowbite-svelte';
+	import UserMenu from '../widgets/UserMenu.svelte';
 
 	export let fluid = true;
 	export let drawerHidden = false;
