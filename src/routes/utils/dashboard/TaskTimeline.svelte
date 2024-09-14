@@ -56,11 +56,7 @@
 
 	// Initialize the map
 	function initializeMap() {
-		// Detect if the user prefers dark mode
-		const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-		const mapStyle = isDarkMode
-			? 'mapbox://styles/mapbox/dark-v10'
-			: 'mapbox://styles/mapbox/light-v10';
+		const mapStyle = getMapStyle();
 
 		if (userLogs.length > 0 && userLogs[0].longlat) {
 			const [lng, lat] = userLogs[0].longlat.split(',').map(Number); // Swapped order
@@ -80,6 +76,12 @@
 
 			updateMapLocation(userLogs[0].longlat);
 		}
+	}
+
+	// Get the current map style based on the theme
+	function getMapStyle(): string {
+		const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+		return isDarkMode ? 'mapbox://styles/mapbox/dark-v10' : 'mapbox://styles/mapbox/light-v10';
 	}
 
 	// Update the map location
