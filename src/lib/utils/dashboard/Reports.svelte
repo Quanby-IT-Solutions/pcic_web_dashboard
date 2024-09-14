@@ -496,11 +496,11 @@
 	$: paginateInspectors();
 </script>
 
-<main class="relative h-full w-full overflow-y-auto">
+<main class="relative flex min-h-screen flex-col">
 	{#if showActivity && selectedUserId}
 		<TaskTimeline userId={selectedUserId} on:back={goBack} />
 	{:else}
-		<div class="p-4">
+		<div class="flex-grow p-4">
 			<div class="mb-4 flex items-center justify-between">
 				<Heading tag="h1" class="text-xl font-semibold text-gray-900 dark:text-white sm:text-2xl">
 					Inspectors Weekly Tasks
@@ -680,7 +680,7 @@
 	{/if}
 
 	{#if selectedTable === 'users' && showPagination}
-		<div class="mx-4 mt-4 flex items-center justify-between">
+		<div class="mx-4 mt-auto flex items-center justify-between p-4">
 			<Button color="blue" on:click={handlePreviousPage} disabled={currentPage === 1}>
 				Previous
 			</Button>
