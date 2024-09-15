@@ -273,19 +273,52 @@
 
 			<Label class="space-y-2">
 				<span>Assignee</span>
-				<div class="flex space-x-2">
-					<Select
-						name="assignee"
-						class="flex-grow border font-normal outline-none"
-						bind:value={selected_user}
-						required
+				<div class="relative w-full">
+					<Button
+						class="flex w-full items-center justify-between rounded-lg border border-gray-300 bg-gray-50 p-3 text-gray-700 outline-none hover:bg-gray-100 focus:ring-2 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:ring-2 dark:focus:ring-green-500"
+						on:click={() => (searchModalOpen = !searchModalOpen)}
 					>
-						<option value={null}>Select an assignee</option>
-						{#each users as user}
-							<option value={user}>{user.inspector_name}</option>
-						{/each}
-					</Select>
-					<Button on:click={() => (searchModalOpen = true)}>Search</Button>
+						<span>{selected_user ? selected_user.inspector_name : 'Select Assignee'}</span>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							class="h-5 w-5 text-gray-500 dark:text-gray-400"
+							viewBox="0 0 20 20"
+							fill="currentColor"
+						>
+							<path
+								fill-rule="evenodd"
+								d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4 4a.75.75 0 01-1.06 0l-4-4a.75.75 0 01.02-1.06z"
+								clip-rule="evenodd"
+							/>
+						</svg>
+					</Button>
+
+					<!-- Dropdown menu -->
+					{#if searchModalOpen}
+						<div
+							class="absolute z-10 mt-2 w-full rounded-lg border border-gray-300 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
+						>
+							<div class="p-2">
+								<Input
+									name="userSearch"
+									class="mb-2 w-full border border-gray-300 bg-white font-normal text-gray-700 placeholder-gray-400 outline-none focus:ring-2 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:placeholder-gray-500 dark:focus:ring-2 dark:focus:ring-green-500"
+									placeholder="Search users..."
+									on:input={filterUsers}
+								/>
+							</div>
+							<div class="max-h-48 overflow-y-auto">
+								{#each filteredUsers as user}
+									<button
+										type="button"
+										class="w-full cursor-pointer p-2 text-left text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+										on:click={() => handleUserSelect(user)}
+									>
+										{user.inspector_name}
+									</button>
+								{/each}
+							</div>
+						</div>
+					{/if}
 				</div>
 			</Label>
 
@@ -429,7 +462,7 @@
 	{/if}
 </Modal> -->
 
-<Modal bind:open={searchModalOpen} size="md">
+<!-- <Modal bind:open={searchModalOpen} size="md">
 	<h3 class="mb-4 text-xl font-medium text-gray-900 dark:text-white">Search Users</h3>
 	<Input
 		name="userSearch"
@@ -444,7 +477,7 @@
 			>
 		{/each}
 	</div>
-</Modal>
+</Modal> -->
 
 <!-- Add this new Modal for editing PPIR form -->
 <Modal bind:open={editPPIRFormOpen} size="xl">
