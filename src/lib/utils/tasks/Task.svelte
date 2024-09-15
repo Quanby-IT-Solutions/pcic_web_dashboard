@@ -163,9 +163,9 @@
 	};
 </script>
 
-<Heading tag="h5" class="mb-6 text-sm font-semibold uppercase"
-	>{selected_task ? 'Update Task' : 'Add New Task'}</Heading
->
+<Heading tag="h5" class="mb-6 text-sm font-semibold uppercase">
+	{selected_task && selected_task.id ? 'Update Task' : 'Add New Task'}
+</Heading>
 <CloseButton
 	on:click={() => (hidden = true)}
 	class="absolute right-2.5 top-2.5 text-gray-400 hover:text-black dark:text-white"

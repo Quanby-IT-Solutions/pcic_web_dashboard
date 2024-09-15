@@ -943,7 +943,9 @@
 
 	function openDrawer(task: any = null) {
 		selected_task = task;
-		if (task && task.ppir_forms) {
+		if (task === null) {
+			selected_task = null;
+		} else if (task && task.ppir_forms) {
 			formView = generateFormView(selected_task);
 		}
 		toggle(Task);
