@@ -34,20 +34,27 @@
 </script>
 
 <div class="flex flex-col" style="block-size: 45rem;">
-	<div class="flex-grow overflow-x-auto">
-		<Table class="h-full select-none">
-			<TableHead class="sticky top-0 bg-gray-100 dark:bg-gray-700">
-				<TableHeadCell class="w-1/4 p-4">Name</TableHeadCell>
-				<TableHeadCell class="w-1/6 p-4">Status</TableHeadCell>
-				<TableHeadCell class="w-1/6 p-4">Date Added</TableHeadCell>
-				<TableHeadCell class="w-1/6 p-4">Role</TableHeadCell>
-				<TableHeadCell class="w-1/6 p-4">Region</TableHeadCell>
-				<TableHeadCell class="w-1/6 p-4">Actions</TableHeadCell>
+	<!-- Table Header Section -->
+	<div class="overflow-x-auto">
+		<Table class="min-w-full divide-y divide-gray-200">
+			<TableHead class="bg-gray-100 dark:bg-gray-700">
+				<TableHeadCell class="w-1/4 p-4 text-left align-middle">Name</TableHeadCell>
+				<TableHeadCell class="w-1/6 p-4 text-center align-middle">Status</TableHeadCell>
+				<TableHeadCell class="w-1/6 p-4 text-center align-middle">Date Added</TableHeadCell>
+				<TableHeadCell class="w-1/6 p-4 text-center align-middle">Role</TableHeadCell>
+				<TableHeadCell class="w-1/6 p-4 text-center align-middle">Region</TableHeadCell>
+				<TableHeadCell class="w-1/6 p-4 text-center align-middle">Actions</TableHeadCell>
 			</TableHead>
+		</Table>
+	</div>
+
+	<!-- Table Body Section -->
+	<div class="flex-grow overflow-y-auto" style="max-height: 40rem;">
+		<Table class="min-w-full divide-y divide-gray-200">
 			<TableBody>
 				{#each users as user}
 					<TableBodyRow class="border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-600">
-						<TableBodyCell class="w-1/4 p-4">
+						<TableBodyCell class="w-1/4 p-4 text-left align-middle">
 							<div class="flex items-center space-x-3">
 								<Avatar
 									src={user.photo_url || imagesPath('default-avatar.png', 'users')}
@@ -60,25 +67,25 @@
 								</div>
 							</div>
 						</TableBodyCell>
-						<TableBodyCell class="w-1/6 p-4">
-							<div class="flex items-center">
+						<TableBodyCell class="w-1/6 p-4 text-center align-middle">
+							<div class="flex items-center justify-center">
 								<div
-									class={`h-2.5 w-2.5 rounded-full bg-${getStatusColor(user.is_online)}-500 mr-2`}
+									class="h-2.5 w-2.5 rounded-full bg-${getStatusColor(user.is_online)}-500 mr-2"
 								></div>
 								{getStatusText(user.is_online)}
 							</div>
 						</TableBodyCell>
-						<TableBodyCell class="w-1/6 p-4">
+						<TableBodyCell class="w-1/6 p-4 text-center align-middle">
 							{new Date(user.created_at).toLocaleDateString()}
 						</TableBodyCell>
-						<TableBodyCell class="w-1/6 p-4">
+						<TableBodyCell class="w-1/6 p-4 text-center align-middle">
 							{user.role}
 						</TableBodyCell>
-						<TableBodyCell class="w-1/6 p-4">
+						<TableBodyCell class="w-1/6 p-4 text-center align-middle">
 							{formatRegionName(user.regions?.region_name)}
 						</TableBodyCell>
-						<TableBodyCell class="w-1/6 p-4">
-							<div class="flex space-x-2">
+						<TableBodyCell class="w-1/6 p-4 text-center align-middle">
+							<div class="flex items-center justify-center space-x-2">
 								<Button size="xs" color="blue" on:click={() => onEditUser(user)}>
 									<EditOutline class="mr-1 h-4 w-4" /> Edit
 								</Button>
