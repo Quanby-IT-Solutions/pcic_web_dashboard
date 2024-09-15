@@ -14,7 +14,7 @@
 	export let filterBySearch: (event: any) => void;
 	export let handleStatusChange: (status: string) => void;
 	export let openModal: (type: string) => void;
-	export let openDrawer: () => void;
+	export let openTaskModal: (task?: any) => void;
 </script>
 
 <Toolbar embedded class="w-full py-4 text-gray-500 dark:text-gray-400">
@@ -90,7 +90,7 @@
 		</Button>
 		<Button
 			class="flex items-center gap-2 whitespace-nowrap rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400"
-			on:click={openDrawer}
+			on:click={() => openTaskModal(null)}
 		>
 			<PlusOutline size="sm" /> Add Task
 		</Button>

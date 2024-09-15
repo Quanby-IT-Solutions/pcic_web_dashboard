@@ -1,8 +1,9 @@
 <!-- src\routes\(sidebar)\crud\tasks\+page.svelte -->
 <script lang="ts">
-	import { Drawer, Modal, Heading } from 'flowbite-svelte';
+	import { Modal, Heading, Button } from 'flowbite-svelte';
 	import { sineIn } from 'svelte/easing';
-	import { onMount, type ComponentType } from 'svelte';
+	import { onMount } from 'svelte';
+	import { QuestionCircleOutline, ExclamationCircleOutline } from 'flowbite-svelte-icons';
 
 	import spinner from '$lib/assets/pcic-spinner.gif';
 	import jsPDF from 'jspdf';
@@ -19,15 +20,11 @@
 
 	let isSyncing = false;
 	let isScanning = false;
-	let hidden: boolean = true;
-	let drawerComponent: ComponentType = Task;
+	let taskModalOpen: boolean = false;
+	let deleteModalOpen: boolean = false;
+	let secondaryModalOpen = false;
 	let open: boolean = false;
 	let modalType: string = 'clear_forms';
-
-	const toggle = (component: ComponentType) => {
-		drawerComponent = component;
-		hidden = !hidden;
-	};
 
 	const path: string = '/c/tasks';
 	const description: string = 'CRUD productsPCIC Web Dashboard';
@@ -52,7 +49,8 @@
 	let statusFilter: string = 'all';
 	let search: string = '';
 	let confirm_delete: string = '';
-
+	let completeModalOpen = false;
+	let resetModalOpen = false;
 	let filteredTasks: any[] = [];
 	let sortings: any[] = [];
 	let toastProps: {
@@ -872,7 +870,7 @@
 		| { type: 'selectAllTasks' }
 		| { type: 'handleSort'; column: string }
 		| { type: 'generateFormView'; task: any; download: boolean }
-		| { type: 'openDrawer'; task: any }
+		| { type: 'openTaskModal'; task: any }
 		| { type: 'openDeleteModal'; task: any };
 
 	function handleTaskTableEvent(event: CustomEvent<any>) {
@@ -892,8 +890,8 @@
 			case 'generateFormView':
 				taskTableEvent = { type: 'generateFormView', ...event.detail };
 				break;
-			case 'openDrawer':
-				taskTableEvent = { type: 'openDrawer', task: event.detail };
+			case 'openTaskModal':
+				taskTableEvent = { type: 'openTaskModal', task: event.detail };
 				break;
 			case 'openDeleteModal':
 				taskTableEvent = { type: 'openDeleteModal', task: event.detail };
@@ -920,8 +918,8 @@
 			case 'generateFormView':
 				generateFormView(event.task, event.download);
 				break;
-			case 'openDrawer':
-				openDrawer(event.task);
+			case 'openTaskModal':
+				openTaskModal(event.task);
 				break;
 			case 'openDeleteModal':
 				openDeleteModal(event.task);
@@ -941,24 +939,46 @@
 		sortFilterTasks();
 	}
 
-	function openDrawer(task: any = null) {
-		selected_task = task;
-		if (task === null) {
-			selected_task = null;
-		} else if (task && task.ppir_forms) {
+	function openTaskModal(task: any = null) {
+		selected_task = task ? { ...task } : {};
+		if (task && task.ppir_forms) {
 			formView = generateFormView(selected_task);
 		}
-		toggle(Task);
+		taskModalOpen = true;
+	}
+
+	function closeTaskModal() {
+		taskModalOpen = false;
+		selected_task = {};
 	}
 
 	function openDeleteModal(task: any) {
 		selected_task = task;
-		toggle(Delete);
+		deleteModalOpen = true;
+	}
+
+	function handleDeleteConfirm() {
+		if (selected_task) {
+			deleteTask(selected_task.id);
+			deleteModalOpen = false;
+			selected_task = null;
+		}
 	}
 
 	function openModal(type: string) {
 		modalType = type;
 		open = true;
+	}
+
+	function openSecondaryModal(type: 'complete' | 'reset') {
+		secondaryModalOpen = true;
+		if (type === 'complete') {
+			completeModalOpen = true;
+			resetModalOpen = false;
+		} else {
+			completeModalOpen = false;
+			resetModalOpen = true;
+		}
 	}
 </script>
 
@@ -978,7 +998,7 @@
 			{filterBySearch}
 			{handleStatusChange}
 			{openModal}
-			{openDrawer}
+			{openTaskModal}
 		/>
 
 		{#if isLoading && spinner}
@@ -996,33 +1016,26 @@
 				on:selectAllTasks={handleTaskTableEvent}
 				on:handleSort={handleTaskTableEvent}
 				on:generateFormView={handleTaskTableEvent}
-				on:openDrawer={handleTaskTableEvent}
+				on:openTaskModal={handleTaskTableEvent}
 				on:openDeleteModal={handleTaskTableEvent}
 			/>
 		{/if}
 	</div>
 </main>
 
-<Drawer
-	activateClickOutside={false}
-	placement="right"
-	transitionType="fly"
-	{transitionParams}
-	bind:hidden
->
-	<svelte:component
-		this={drawerComponent}
-		{regions}
-		{formView}
-		{users}
-		{markAsComplete}
-		{selected_task}
-		{upsertTask}
-		deleteTask={() => deleteTask(selected_task.id)}
-		clearForm={clearPPICForm}
-		bind:hidden
-	/>
-</Drawer>
+<Task
+	bind:open={taskModalOpen}
+	{regions}
+	{formView}
+	{users}
+	{markAsComplete}
+	bind:selected_task
+	{upsertTask}
+	{deleteTask}
+	clearForm={clearPPICForm}
+	on:close={closeTaskModal}
+	{openSecondaryModal}
+/>
 
 <Modal bind:open size={modalType == 'sync' ? 'md' : 'sm'}>
 	{#if modalType == 'sync'}
@@ -1041,6 +1054,70 @@
 			{handleConfirmDelete}
 			closeModal={() => (open = false)}
 		/>
+	{/if}
+</Modal>
+
+<Modal bind:open={deleteModalOpen} size="sm">
+	<h3 class="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">
+		Are you sure you want to delete this task?
+	</h3>
+	<div class="flex justify-center gap-4">
+		<Button color="red" on:click={() => handleDeleteConfirm()}>Yes, I'm sure</Button>
+		<Button color="alternative" on:click={() => (deleteModalOpen = false)}>No, cancel</Button>
+	</div>
+</Modal>
+
+<Modal bind:open={secondaryModalOpen} size="sm">
+	{#if completeModalOpen || resetModalOpen}
+		{#if completeModalOpen}
+			<QuestionCircleOutline class="mx-auto mb-4 mt-8 h-10 w-10 text-blue-600" />
+		{:else}
+			<ExclamationCircleOutline class="mx-auto mb-4 mt-8 h-10 w-10 text-red-600" />
+		{/if}
+
+		<h3 class="mb-6 text-center text-lg text-gray-500 dark:text-gray-400">
+			{completeModalOpen
+				? 'Are you sure you want to mark this task as completed?'
+				: "Are you sure you want reset the assignee's form?"}
+		</h3>
+
+		<div class="flex items-center justify-center">
+			<Button
+				color={completeModalOpen ? 'blue' : 'red'}
+				class="mr-2"
+				on:click={async () => {
+					if (completeModalOpen) {
+						const success = await markAsComplete(selected_task.id);
+						if (success) {
+							selected_task.status = 'completed';
+						}
+					} else {
+						await clearPPICForm(selected_task.id);
+					}
+					completeModalOpen = false;
+					resetModalOpen = false;
+				}}>Yes, I'm sure</Button
+			>
+			<Button
+				color="alternative"
+				on:click={() => {
+					secondaryModalOpen = false;
+					completeModalOpen = false;
+					resetModalOpen = false;
+				}}>No, cancel</Button
+			>
+		</div>
+	{:else}
+		<object data={formView} width="100%" height="600px" title="form"></object>
+		<div class="flex items-center justify-center">
+			<Button
+				color="alternative"
+				on:click={() => {
+					completeModalOpen = false;
+					resetModalOpen = false;
+				}}>Close</Button
+			>
+		</div>
 	{/if}
 </Modal>
 

@@ -77,8 +77,8 @@
 		dispatch('generateFormView', { task, download });
 	}
 
-	function openDrawer(task: any) {
-		dispatch('openDrawer', task);
+	function openTaskModal(task: any) {
+		dispatch('openTaskModal', task);
 	}
 
 	function openDeleteModal(task: any) {
@@ -172,7 +172,7 @@
 							</TableBodyCell>
 							<TableBodyCell>
 								<div class="flex items-center space-x-2">
-									<Button size="xs" on:click={() => openDrawer(task)}>
+									<Button size="xs" on:click={() => openTaskModal(task)}>
 										<EditOutline size="xs" class="mr-1" /> Manage
 									</Button>
 									<Button color="red" size="xs" on:click={() => openDeleteModal(task)}>
