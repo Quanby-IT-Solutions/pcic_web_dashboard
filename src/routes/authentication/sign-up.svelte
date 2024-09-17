@@ -1,15 +1,13 @@
 <script lang="ts">
 	import { Label, Input } from 'flowbite-svelte';
 
-	import logo from '$lib/assets/pcic.svg';
-
 	import SignUp from '$lib/utils/authentication/SignUp.svelte';
 	import MetaTag from '$lib/utils/general/MetaTag.svelte';
 
 	const title = 'Create a Free Account';
 	const site = {
 		name: 'PCIC Web Dashboard',
-		img: logo,
+		img: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Philippine_Crop_Insurance_Corporation_%28PCIC%29.svg/432px-Philippine_Crop_Insurance_Corporation_%28PCIC%29.svg.png",
 		link: '/',
 		imgAlt: 'PCIC Logo'
 	};

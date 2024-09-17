@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { Button, Card, Checkbox } from 'flowbite-svelte';
 	export let title = 'Reset your password';
-	import logo from '$lib/assets/pcic.svg';
 	export let site = {
 		name: 'PCIC Portal',
-		img: logo,
+		img: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Philippine_Crop_Insurance_Corporation_%28PCIC%29.svg/432px-Philippine_Crop_Insurance_Corporation_%28PCIC%29.svg.png",
 		link: '/',
 		imgAlt: 'PCIC Logo'
 	};

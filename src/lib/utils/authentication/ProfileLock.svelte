@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { Button, Card, Checkbox, P } from 'flowbite-svelte';
 	import { LockOpenSolid } from 'flowbite-svelte-icons';
-	import logo from '$lib/assets/pcic.svg';
 	export let site = {
 		name: 'PCIC Portal',
-		img: logo,
+		img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Philippine_Crop_Insurance_Corporation_%28PCIC%29.svg/432px-Philippine_Crop_Insurance_Corporation_%28PCIC%29.svg.png',
 		link: '/',
 		imgAlt: 'PCIC Logo'
 	};
@@ -62,31 +61,3 @@
 		</Card>
 	</div>
 </main>
-
-<!--
-@component
-[Go to docs](https://pcic_web_application.vercel.app/)
-## Props
-@prop export let site = {
-		name: 'PCIC Portal',
-		img: '/images/pcic.svg',
-		link: '/',
-		imgAlt: 'PCIC Logo'
-	};
-@prop export let user = {
-		name: 'Agent Name',
-		img: '/images/users/bonnie-green.png',
-		imgAlt: 'Agent Name'
-	};
-@prop export let btnTitle = 'Reset password';
-@prop export let pageDescription = 'Better to be safe than sorry.';
-@prop export let mainClass = 'bg-gray-50 dark:bg-gray-900 w-full';
-@prop export let mainDivClass =
-		'flex flex-col items-center justify-center px-6 pt-8 mx-auto md:h-screen pt:mt-0 dark:bg-gray-900';
-@prop export let siteLinkClass =
-		'flex items-center justify-center mb-8 text-2xl font-semibold lg:mb-10 dark:text-white';
-@prop export let siteImgClass = 'mr-4 h-11';
-@prop export let cardH1Class = 'mb-3 text-2xl font-bold text-gray-900 dark:text-white';
-@prop export let cardDiv3Class = 'flex space-x-4';
-@prop export let userImgClass = 'w-8 h-8 rounded-full';
--->

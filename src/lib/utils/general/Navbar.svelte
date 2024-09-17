@@ -1,10 +1,6 @@
 <script lang="ts">
 	import { ChevronDownOutline } from 'flowbite-svelte-icons';
 
-	import logo from '$lib/assets/pcic.svg';
-
-	// import '../../app.pcss';
-
 	import {
 		DarkMode,
 		Dropdown,
@@ -53,7 +49,7 @@
 		/>
 
 		<NavBrand href="/" class={list ? 'w-40' : 'lg:w-60'}>
-			<img src={logo} class="me-2.5 h-6 sm:h-8" alt="PCIC Logo" />
+			<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Philippine_Crop_Insurance_Corporation_%28PCIC%29.svg/432px-Philippine_Crop_Insurance_Corporation_%28PCIC%29.svg.png" class="me-2.5 h-6 sm:h-8" alt="PCIC Logo" />
 			<span
 				class="ml-px self-center whitespace-nowrap text-xl font-semibold dark:text-gray-100 sm:text-2xl"
 			>

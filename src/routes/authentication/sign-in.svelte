@@ -2,7 +2,6 @@
 	import { Label, Input, DarkMode } from 'flowbite-svelte';
 	import { goto } from '$app/navigation';
 
-	import logo from '$lib/assets/pcic.svg';
 	import MetaTag from '$lib/utils/general/MetaTag.svelte';
 	import SignIn from '$lib/utils/authentication/SignIn.svelte';
 	import Toast from '$lib/utils/widgets/Toast.svelte';
@@ -10,7 +9,7 @@
 	let title = 'Sign in to Platform';
 	let site = {
 		name: 'PCIC Portal',
-		img: logo,
+		img: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Philippine_Crop_Insurance_Corporation_%28PCIC%29.svg/432px-Philippine_Crop_Insurance_Corporation_%28PCIC%29.svg.png",
 		link: '/',
 		imgAlt: 'PCIC Logo'
 	};
