@@ -10,7 +10,7 @@
     const dispatch = createEventDispatcher();
     let isDeleting = false;
     let errorMessage = '';
-
+    
     $: ({ supabase } = data);
 
     async function deleteUser() {
