@@ -12,7 +12,7 @@
 		Input,
 		Select
 	} from 'flowbite-svelte';
-
+	import { fade } from 'svelte/transition';
 	import {
 		ArrowUpDownOutline,
 		ArrowDownOutline,
@@ -31,6 +31,8 @@
 	export let sortings: string[];
 	export let setStatusColor: (status: string) => string;
 	export let setPriorityColor: (priority: string) => string;
+
+	let isHovering = false;
 
 	// New pagination variables
 	let currentPage = 1;
@@ -90,11 +92,34 @@
 	<div class="overflow-x-auto shadow-md sm:rounded-lg">
 		<Table striped={true}>
 			<TableHead>
-				<TableHeadCell class="!p-4">
-					<Checkbox
-						on:click={selectAllTasks}
-						checked={selectedTasks.length === filteredTasks.length && filteredTasks.length > 0}
-					/>
+				<TableHeadCell class="relative !p-4">
+					<div
+						role="tooltip"
+						aria-label="Select all checkbox"
+						class="relative inline-block"
+						on:mouseenter={() => (isHovering = true)}
+						on:mouseleave={() => (isHovering = false)}
+						on:focusin={() => (isHovering = true)}
+						on:focusout={() => (isHovering = false)}
+					>
+						<Checkbox
+							on:click={selectAllTasks}
+							checked={selectedTasks.length === filteredTasks.length && filteredTasks.length > 0}
+							aria-describedby="selectAllTooltip"
+						/>
+						{#if isHovering}
+							<div
+								id="selectAllTooltip"
+								transition:fade={{ duration: 100 }}
+								class="absolute left-0 top-full z-50 mt-2 w-48 whitespace-normal rounded border border-gray-700 bg-gray-800 px-3 py-2 text-xs text-white shadow-lg"
+							>
+								Select all items
+								<div
+									class="absolute left-4 top-0 -translate-y-full border-8 border-x-transparent border-b-gray-800 border-t-transparent"
+								></div>
+							</div>
+						{/if}
+					</div>
 				</TableHeadCell>
 				{#each ['Task Name', 'Service Group', 'Service Type', 'Attempts', 'Priority', 'Status', 'Assignee', 'Actions'] as title, index}
 					<TableHeadCell>
