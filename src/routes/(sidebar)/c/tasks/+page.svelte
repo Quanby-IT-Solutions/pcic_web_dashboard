@@ -160,47 +160,62 @@
 	};
 
 	const sortFilterTasks = () => {
-		filteredTasks = tasks.filter(
-			(task) => task.status.toLowerCase().includes(statusFilter) || statusFilter == 'all'
-		);
+		console.log('Current statusFilter:', statusFilter);
+		console.log('Tasks before filtering:', tasks.length);
+
+		filteredTasks = tasks.filter((task) => {
+			return (
+				statusFilter.toLowerCase() === 'all' ||
+				task.status.toLowerCase() === statusFilter.toLowerCase()
+			);
+		});
+
+		console.log('Tasks after status filtering:', filteredTasks.length);
+
 		filteredTasks = filteredTasks.filter(
 			(task) =>
-				task.task_number.toLowerCase().includes(search) ||
-				task.users.inspector_name.toLowerCase().includes(search) ||
-				task.service_type.toLowerCase().includes(search) ||
-				task.service_group.toLowerCase().includes(search)
+				task.task_number.toLowerCase().includes(search.toLowerCase()) ||
+				task.users.inspector_name.toLowerCase().includes(search.toLowerCase()) ||
+				task.service_type.toLowerCase().includes(search.toLowerCase()) ||
+				task.service_group.toLowerCase().includes(search.toLowerCase())
 		);
+
+		console.log('Tasks after search filtering:', filteredTasks.length);
+
 		selectedTasks = selectedTasks.filter((_task) => filteredTasks.includes(_task));
+
 		for (const sort of sortings) {
 			switch (sort) {
 				case 'Task Name Desc':
-					filteredTasks = filteredTasks.sort((a, b) => a.task_number.localeCompare(b.task_number));
+					filteredTasks = filteredTasks.sort((a, b) => b.task_number.localeCompare(a.task_number));
 					break;
 				case 'Service Type Desc':
 					filteredTasks = filteredTasks.sort((a, b) =>
-						a.service_type.localeCompare(b.service_type)
+						b.service_type.localeCompare(a.service_type)
 					);
 					break;
 				case 'Priority Desc':
 					filteredTasks = filteredTasks.sort(
-						(a, b) => getPriorityIndex(a.priority) - getPriorityIndex(b.priority)
+						(a, b) => getPriorityIndex(b.priority) - getPriorityIndex(a.priority)
 					);
 					break;
 				case 'Task Name Asc':
-					filteredTasks = filteredTasks.sort((b, a) => a.task_number.localeCompare(b.task_number));
+					filteredTasks = filteredTasks.sort((a, b) => a.task_number.localeCompare(b.task_number));
 					break;
 				case 'Service Type Asc':
-					filteredTasks = filteredTasks.sort((b, a) =>
+					filteredTasks = filteredTasks.sort((a, b) =>
 						a.service_type.localeCompare(b.service_type)
 					);
 					break;
 				case 'Priority Asc':
 					filteredTasks = filteredTasks.sort(
-						(b, a) => getPriorityIndex(a.priority) - getPriorityIndex(b.priority)
+						(a, b) => getPriorityIndex(a.priority) - getPriorityIndex(b.priority)
 					);
 					break;
 			}
 		}
+
+		console.log('Final filtered tasks:', filteredTasks.length);
 		currentPage = 1;
 	};
 

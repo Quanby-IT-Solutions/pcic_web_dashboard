@@ -1,4 +1,3 @@
-<!-- src\routes\(sidebar)\crud\tasks\TaskTable.svelte -->
 <script lang="ts">
 	import {
 		Table,
@@ -34,12 +33,12 @@
 
 	let isHovering = false;
 
-	// New pagination variables
 	let currentPage = 1;
 	let itemsPerPage = 10;
 	let paginatedTasks: any[] = [];
 
 	$: {
+		console.log('filteredTasks changed, length:', filteredTasks.length);
 		paginateTasks();
 	}
 
@@ -47,6 +46,7 @@
 		const startIndex = (currentPage - 1) * itemsPerPage;
 		const endIndex = startIndex + itemsPerPage;
 		paginatedTasks = filteredTasks.slice(startIndex, endIndex);
+		console.log('Paginated tasks:', paginatedTasks.length);
 	}
 
 	function handleNextPage() {
