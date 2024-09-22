@@ -136,17 +136,23 @@
 		{/each}
 	</TableHead>
 	<TableBody tableBodyClass="divide-y">
-		{#each $paginatedTasks as task (task.id)}
-			<TableBodyRow class="font-normal">
-				{#each $taskActiveHeaders as header}
-					<td transition:fade={{ duration: 600, delay: 100 }}>
-						<TableBodyCell>
-							{task[header] ?? 'N/A'}
-						</TableBodyCell>
-					</td>
-				{/each}
+		{#if $paginatedTasks && $paginatedTasks.length > 0}
+			{#each $paginatedTasks as task, index (task.id || `task-${index}`)}
+				<TableBodyRow class="font-normal">
+					{#each $taskActiveHeaders as header}
+						<td transition:fade={{ duration: 600, delay: 100 }}>
+							<TableBodyCell>
+								{task && task[header] !== undefined ? task[header] : 'N/A'}
+							</TableBodyCell>
+						</td>
+					{/each}
+				</TableBodyRow>
+			{/each}
+		{:else}
+			<TableBodyRow>
+				<TableBodyCell colspan={$taskActiveHeaders.length}>No tasks available</TableBodyCell>
 			</TableBodyRow>
-		{/each}
+		{/if}
 	</TableBody>
 </Table>
 
