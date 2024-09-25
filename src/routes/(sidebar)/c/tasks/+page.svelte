@@ -3,7 +3,7 @@
 	import { Modal, Heading, Button } from 'flowbite-svelte';
 	import { sineIn } from 'svelte/easing';
 	import { onMount } from 'svelte';
-	import { QuestionCircleOutline, ExclamationCircleOutline, ExclamationCircleSolid } from 'flowbite-svelte-icons';
+	import { QuestionCircleOutline, ExclamationCircleOutline } from 'flowbite-svelte-icons';
 
 	import spinner from '$lib/assets/pcic-spinner.gif';
 	import jsPDF from 'jspdf';
@@ -18,20 +18,17 @@
 	import SyncModal from '$lib/utils/tasks/SyncModal.svelte';
 	import ConfirmationModal from '$lib/utils/tasks/ConfirmationModal.svelte';
 
-	
 	let isSyncing = false;
+	let isScanning = false;
+	let taskModalOpen: boolean = false;
+	let deleteModalOpen: boolean = false;
+	let secondaryModalOpen = false;
+	let open: boolean = false;
+	let modalType: string = 'clear_forms';
 
-	let hidden: boolean = true; // modal control
-	let drawerComponent: ComponentType = Task; // drawer component
-
-	const toggle = (component: ComponentType) => {
-		drawerComponent = component;
-		hidden = !hidden;
-	};
-
-	const path: string = '/crud/tasks';
-	const description: string = 'CRUD products example - PCIC Web Dashboard';
-	const title: string = 'PCIC Web Dashboard - CRUD Products';
+	const path: string = '/c/tasks';
+	const description: string = 'CRUD productsPCIC Web Dashboard';
+	const title: string = 'PCIC Web Dashboard';
 	const subtitle: string = 'CRUD Products';
 	let transitionParams = {
 		x: 320,
@@ -51,19 +48,16 @@
 	let selected_task: any = {};
 	let statusFilter: string = 'all';
 	let search: string = '';
-	let modalType: string = 'clear_forms';
-	/* 
-	Modal Types 
-		1. clear_forms
-		2. delete_multiple
-	*/
-
-	let open: boolean = false;
 	let confirm_delete: string = '';
-
+	let completeModalOpen = false;
+	let resetModalOpen = false;
 	let filteredTasks: any[] = [];
 	let sortings: any[] = [];
-	let toastProps: { show: boolean; message: string; type: 'success' | 'error' } = {
+	let toastProps: {
+		show: boolean;
+		message: string;
+		type: 'success' | 'error' | 'info' | 'warning';
+	} = {
 		show: false,
 		message: '',
 		type: 'success'
@@ -76,9 +70,9 @@
 
 	let isNational = false;
 
-	let isScanning = false;
-
 	let currentlySyncing: any = null;
+
+	let scannedFiles: any = {};
 
 	$: ({ supabase } = data);
 
@@ -100,40 +94,37 @@
 	};
 
 	const handleStatusChange = (status: string) => {
-    statusFilter = status;
-    currentPage = 1; // Reset to page 1 when changing status filter
-    sortFilterTasks();
-};
-	let regions:any[];
-	
+		statusFilter = status;
+		currentPage = 1;
+		sortFilterTasks();
+	};
+	let regions: any[];
+
 	const fetchRegions = async () => {
 		try {
-			console.log('Fetching regions...');
-			const { data: regionsData, error } = await supabase.from('regions').select('id, region_name, region_code');
+			const { data: regionsData, error } = await supabase
+				.from('regions')
+				.select('id, region_name, region_code');
 
 			if (error) {
 				console.error('Supabase error when fetching regions:', error);
 				throw error;
 			}
 
-			console.log('Raw regions data:', regionsData);
-
-			regions = regionsData ;
-			console.log('Processed regions:', regions);
+			regions = regionsData;
 
 			if (regions.length === 0) {
 				console.warn(
 					'No regions fetched from the database. Please check if the regions table has data.'
 				);
-				showToast('Error fetchng regions', 'error');
+				showToast('Error fetching regions', 'error');
 			}
 		} catch (error) {
-			console.error('Error fetching regions:', error);
-			showToast('Error fetchng regions', 'error');
+			showToast('Error fetching regions', 'error');
 		}
-	}
+	};
 
-	const showToast = (message: string, type: 'success' | 'error') => {
+	const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning') => {
 		toastProps = { show: true, message, type };
 		setTimeout(() => {
 			toastProps = { ...toastProps, show: false };
@@ -150,10 +141,10 @@
 	};
 
 	const selectAllTasks = () => {
-		if (selectedTasks >= filteredTasks) {
+		if (selectedTasks.length >= filteredTasks.length) {
 			selectedTasks = [];
 		} else {
-			selectedTasks = filteredTasks;
+			selectedTasks = [...filteredTasks];
 		}
 	};
 
@@ -169,63 +160,70 @@
 	};
 
 	const sortFilterTasks = () => {
-		// view filter
-		filteredTasks = tasks.filter(
-			(task) => task.status.toLowerCase().includes(statusFilter) || statusFilter == 'all'
-		);
+		console.log('Current statusFilter:', statusFilter);
+		console.log('Tasks before filtering:', tasks.length);
+
+		filteredTasks = tasks.filter((task) => {
+			return (
+				statusFilter.toLowerCase() === 'all' ||
+				task.status.toLowerCase() === statusFilter.toLowerCase()
+			);
+		});
+
+		console.log('Tasks after status filtering:', filteredTasks.length);
+
 		filteredTasks = filteredTasks.filter(
 			(task) =>
-				task.task_number.toLowerCase().includes(search) ||
-				task.users.inspector_name.toLowerCase().includes(search) ||
-				task.service_type.toLowerCase().includes(search) ||
-				task.service_group.toLowerCase().includes(search)
+				task.task_number.toLowerCase().includes(search.toLowerCase()) ||
+				task.users.inspector_name.toLowerCase().includes(search.toLowerCase()) ||
+				task.service_type.toLowerCase().includes(search.toLowerCase()) ||
+				task.service_group.toLowerCase().includes(search.toLowerCase())
 		);
-		// selected filters
+
+		console.log('Tasks after search filtering:', filteredTasks.length);
+
 		selectedTasks = selectedTasks.filter((_task) => filteredTasks.includes(_task));
+
 		for (const sort of sortings) {
 			switch (sort) {
 				case 'Task Name Desc':
-					filteredTasks = filteredTasks.sort((a, b) => {
-						return a.task_number.localeCompare(b.task_number);
-					});
+					filteredTasks = filteredTasks.sort((a, b) => b.task_number.localeCompare(a.task_number));
 					break;
 				case 'Service Type Desc':
-					filteredTasks = filteredTasks.sort((a, b) => {
-						return a.service_type.localeCompare(b.service_type);
-					});
+					filteredTasks = filteredTasks.sort((a, b) =>
+						b.service_type.localeCompare(a.service_type)
+					);
 					break;
 				case 'Priority Desc':
-					filteredTasks = filteredTasks.sort((a, b) => {
-						return getPriorityIndex(a.priority) - getPriorityIndex(b.priority);
-					});
+					filteredTasks = filteredTasks.sort(
+						(a, b) => getPriorityIndex(b.priority) - getPriorityIndex(a.priority)
+					);
 					break;
 				case 'Task Name Asc':
-					filteredTasks = filteredTasks.sort((b, a) => {
-						return a.task_number.localeCompare(b.task_number);
-					});
+					filteredTasks = filteredTasks.sort((a, b) => a.task_number.localeCompare(b.task_number));
 					break;
 				case 'Service Type Asc':
-					filteredTasks = filteredTasks.sort((b, a) => {
-						return a.service_type.localeCompare(b.service_type);
-					});
+					filteredTasks = filteredTasks.sort((a, b) =>
+						a.service_type.localeCompare(b.service_type)
+					);
 					break;
 				case 'Priority Asc':
-					filteredTasks = filteredTasks.sort((b, a) => {
-						return getPriorityIndex(a.priority) - getPriorityIndex(b.priority);
-					});
+					filteredTasks = filteredTasks.sort(
+						(a, b) => getPriorityIndex(a.priority) - getPriorityIndex(b.priority)
+					);
 					break;
 			}
 		}
-		currentPage = 1;
 
+		console.log('Final filtered tasks:', filteredTasks.length);
+		currentPage = 1;
 	};
 
 	const filterBySearch = (event: any) => {
-    search = event.target.value.toLowerCase();
-    currentPage = 1; // Reset to page 1 when searching
-    sortFilterTasks();
-};
-
+		search = event.target.value.toLowerCase();
+		currentPage = 1;
+		sortFilterTasks();
+	};
 
 	const setStatusColor = (status: string) => {
 		switch (status.toLowerCase()) {
@@ -299,18 +297,15 @@
 			.eq('id', taskID);
 
 		if (error) {
-			console.log(error);
 			showToast('Error in marking task as completed!', 'error');
 			return false;
 		}
-		// add toast
 		await fetchTasks();
 		showToast('Successfully marked as completed', 'success');
-		console.log('For successfully marked as completed');
 		return true;
 	};
 
-	const upsertTask = async (upsertData: any, row:any = {}) => {
+	const upsertTask = async (upsertData: any, row: any = {}) => {
 		const invalidData = Object.keys(upsertData).find(
 			(key) => key != 'id' && (upsertData[key] == null || upsertData[key].trim() == '')
 		);
@@ -319,12 +314,11 @@
 			return false;
 		}
 
-		if(row['ppir_insuranceid'] == null || row['ppir_assignmentid'] == null){
-			showToast(`PPIR Insurance ID and Assignment ID must be set!`,'error');
+		if (row['ppir_insuranceid'] == null || row['ppir_assignmentid'] == null) {
+			showToast(`PPIR Insurance ID and Assignment ID must be set!`, 'error');
 			return false;
 		}
 
-		
 		const { data: taskData, error } = await supabase
 			.from('tasks')
 			.upsert(upsertData)
@@ -335,40 +329,37 @@
                         id,inspector_name
                     )
                 `
-			).single();
+			)
+			.single();
 		if (error) {
-			console.log(error);
 			showToast('Error in processing data!', 'error');
 			return false;
 		}
-		
-		const form_response = await supabase
-			.from('ppir_forms')
-			.upsert({
-				task_id: taskData.id,
-				ppir_assignmentid: row['ppir_assignmentid'],
-				ppir_insuranceid: row['ppir_insuranceid'],
-				ppir_farmername: row['ppir_farmername'],
-				ppir_address: row['ppir_address'],
-				ppir_farmertype: row['ppir_farmertype'],
-				ppir_mobileno: row['ppir_mobileno'],
-				ppir_groupname: row['ppir_groupname'],
-				ppir_groupaddress: row['ppir_groupaddress'],
-				ppir_lendername: row['ppir_lendername'],
-				ppir_lenderaddress: row['ppir_lenderaddress'],
-				ppir_cicno: row['ppir_cicno'],
-				ppir_farmloc: row['ppir_farmloc'],
-				ppir_north: row['ppir_north'],
-				ppir_south: row['ppir_south'],
-				ppir_east: row['ppir_east'],
-				ppir_west: row['ppir_west'],
-				ppir_area_aci: row['ppir_area_aci'],
-				ppir_dopds_aci: row['ppir_dopds_aci'],
-				ppir_doptp_aci: row['ppir_doptp_aci'],
-				ppir_svp_aci: row['ppir_svp_aci'],
-			});
-		if(form_response.error){
-			console.log(form_response.error)
+
+		const form_response = await supabase.from('ppir_forms').upsert({
+			task_id: taskData.id,
+			ppir_assignmentid: row['ppir_assignmentid'],
+			ppir_insuranceid: row['ppir_insuranceid'],
+			ppir_farmername: row['ppir_farmername'],
+			ppir_address: row['ppir_address'],
+			ppir_farmertype: row['ppir_farmertype'],
+			ppir_mobileno: row['ppir_mobileno'],
+			ppir_groupname: row['ppir_groupname'],
+			ppir_groupaddress: row['ppir_groupaddress'],
+			ppir_lendername: row['ppir_lendername'],
+			ppir_lenderaddress: row['ppir_lenderaddress'],
+			ppir_cicno: row['ppir_cicno'],
+			ppir_farmloc: row['ppir_farmloc'],
+			ppir_north: row['ppir_north'],
+			ppir_south: row['ppir_south'],
+			ppir_east: row['ppir_east'],
+			ppir_west: row['ppir_west'],
+			ppir_area_aci: row['ppir_area_aci'],
+			ppir_dopds_aci: row['ppir_dopds_aci'],
+			ppir_doptp_aci: row['ppir_doptp_aci'],
+			ppir_svp_aci: row['ppir_svp_aci']
+		});
+		if (form_response.error) {
 			showToast('Error processing task', 'error');
 			return false;
 		}
@@ -384,7 +375,6 @@
 
 	const deleteTask = async (rowId: string) => {
 		try {
-			// Assuming 'id' is the primary key
 			const { data, error } = await supabase.from('tasks').delete().eq('id', rowId);
 
 			if (error) {
@@ -394,7 +384,6 @@
 			}
 			await fetchTasks();
 			showToast('Successfully deleted task', 'success');
-			// Optionally, update state or perform other actions after deletion
 		} catch (error) {
 			console.error('Error deleting row:', error);
 		}
@@ -420,7 +409,6 @@
 				throw error;
 			}
 			users = data;
-			console.log('Fetched users:', users);
 		} catch (error) {
 			console.error('Error fetching users:', error);
 		}
@@ -458,10 +446,10 @@
 		const data = task.ppir_forms;
 		data.task_number = task.task_number;
 		const doc = new jsPDF();
-		const taskNumber = data.task_number || 'Unknown Task'; // Title task number
+		const taskNumber = data.task_number || 'Unknown Task';
 		doc.setFontSize(16);
 		doc.setFont('', 'bold');
-		doc.text(`${taskNumber}`, 10, 15); // Title
+		doc.text(`${taskNumber}`, 10, 15);
 
 		const fields = [
 			'ppir_assignmentid',
@@ -499,11 +487,11 @@
 			'ppir_dopds_aci'
 		];
 
-		let yPos = 30; // Starting y position after title
-		const lineHeight = 10; // Space between lines
+		let yPos = 30;
+		const lineHeight = 10;
 		const pageHeight = doc.internal.pageSize.height;
-		const columnWidth = 95; // Half of page width (assuming A4 size)
-		let column = 1; // Current column
+		const columnWidth = 95;
+		let column = 1;
 		doc.setFontSize(11);
 
 		fields.forEach((field, index) => {
@@ -516,22 +504,18 @@
 				.replace(/_/g, ' ')
 				.toUpperCase();
 
-			// Set font for label
 			doc.setFont('', 'bold');
 			doc.text(`${label}:`, (column - 1) * columnWidth + (column == 1 ? 10 : 20), yPos);
 
-			// Set font for value and draw underline
 			doc.setFont('', 'normal');
-			doc.text(`____________________________`, (column - 1) * columnWidth + 50, yPos); // Underline
+			doc.text(`____________________________`, (column - 1) * columnWidth + 50, yPos);
 			doc.text(value, (column - 1) * columnWidth + 50, yPos);
 
 			yPos += lineHeight;
 
-			// Check if we need to switch to the next column
 			if (yPos + lineHeight > pageHeight - 70 && column === 1) {
-				// Adjusted margin to account for bottom space for signatures
 				column = 2;
-				yPos = 30; // Reset y position for second column
+				yPos = 30;
 			} else if (yPos + lineHeight > pageHeight - 70 && column === 2) {
 				doc.addPage();
 				column = 1;
@@ -539,31 +523,27 @@
 			}
 		});
 
-		// Move yPos to bottom for signatures
 		yPos = pageHeight - 50;
 
-		// Signatures
 		if (data.ppir_sig_insured) {
 			const sigInsuredImg = `data:image/png;base64,${data.ppir_sig_insured}`;
 
-			// Draw a square around the signature
-			doc.setLineWidth(0.5); // Set the border thickness
-			doc.rect(65, yPos - 30, 60, 30); // Draw the rectangle (x, y, width, height)
+			doc.setLineWidth(0.5);
+			doc.rect(65, yPos - 30, 60, 30);
 
 			doc.text('SIGNATURE OF INSURED:', 10, yPos - 15);
-			doc.addImage(sigInsuredImg, 'PNG', 70, yPos - 25, 50, 20); // Position the image inside the square
-			yPos += 40; // Adjust yPos to leave space for the next signature
+			doc.addImage(sigInsuredImg, 'PNG', 70, yPos - 25, 50, 20);
+			yPos += 40;
 		}
 
 		if (data.ppir_sig_iuia) {
 			const sigIUIAImg = `data:image/png;base64,${data.ppir_sig_iuia}`;
 
-			// Draw a square around the signature
-			doc.setLineWidth(0.5); // Set the border thickness
-			doc.rect(65, yPos - 30, 60, 30); // Draw the rectangle (x, y, width, height)
+			doc.setLineWidth(0.5);
+			doc.rect(65, yPos - 30, 60, 30);
 
 			doc.text('SIGNATURE OF IU/IA:', 10, yPos - 15);
-			doc.addImage(sigIUIAImg, 'PNG', 70, yPos - 25, 50, 20); // Position the image inside the square
+			doc.addImage(sigIUIAImg, 'PNG', 70, yPos - 25, 50, 20);
 		}
 		if (download) {
 			doc.save(`${data.task_number}-${data.ppir_assignmentid}.pdf`);
@@ -571,137 +551,103 @@
 		return doc.output('datauristring');
 	};
 
-	let scannedFiles: any = {};
-
 	async function scanFTP() {
 		isScanning = true;
+		showToast('Starting FTP server scan...', 'info');
 		try {
 			const directory = '/Work';
-			// Connect to the SFTP server
 			const fetched_list = await fetch('/api/list-directory', {
 				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					directory: `${directory}`
-				})
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ directory })
 			});
 
 			if (!fetched_list.ok) {
-				console.error('Error fetching files:', fetched_list.statusText);
-				showToast('Error fetching files from FTP server, try again later.', 'error')
-				return;
+				throw new Error(`Error fetching files: ${fetched_list.statusText}`);
 			}
 
-			// List files in the remote directory
 			const fileList = await fetched_list.json();
-			// Iterate over each file
+			let totalFiles = 0;
+			let processedFiles = 0;
+
 			for (const file of fileList) {
 				if (file.name.endsWith('.csv')) {
-					const fetchedFile = scannedFiles[file.name];
-					if(fetchedFile){
-						if(fetchedFile.synced.length >= fetchedFile.length){
-							continue;
+					totalFiles++;
+					try {
+						showToast(`Processing file: ${file.name}`, 'info');
+						scannedFiles[file.name] = {
+							rows: [],
+							synced: [],
+							scanning: true,
+							length: 0
+						};
+
+						const fetched_file = await fetch('/api/get-file', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({ filePath: `${directory}/${file.name}` })
+						});
+
+						if (!fetched_file.ok) {
+							throw new Error(`Error fetching file ${file.name}: ${fetched_file.statusText}`);
 						}
-					}	
-					
-					// Check if the file is a CSV
-					console.log(`Processing file: ${file.name}`);
-					scannedFiles[file.name] = {
-						rows: [],
-						synced: [],
-						scanning: true,
-						error: false,
-						error_message: null,
-					};
-					const fetched_file = await fetch('/api/get-file', {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json'
-						},
-						body: JSON.stringify({
-							filePath: `${directory}/${file.name}`
-						})
-					});
-					if (!fetched_file.ok) {
-						console.error('Error fetching file:', fetched_file.statusText);
-						// showToast('Error fetching file: ', 'error')
-						scannedFiles[file.name]['error'] = true;
-						scannedFiles[file.name]['error_message'] = `Error fetching file`;
-						scannedFiles[file.name]['scanning'] = false;
-						continue;
+
+						const csvData = await fetched_file.text();
+						const parsedData = Papa.parse(csvData, { header: true, skipEmptyLines: true });
+						scannedFiles[file.name].length = parsedData.data.length;
+
+						for (const row of parsedData.data as any[]) {
+							const ppirInsuranceId = row['ppir_insuranceid'];
+							const { data: existingRow, error: selectError } = await supabase
+								.from('ppir_forms')
+								.select('ppir_insuranceid')
+								.eq('ppir_insuranceid', ppirInsuranceId)
+								.single();
+
+							if (selectError && selectError.code !== 'PGRST116') {
+								console.error(
+									`Error checking existence of ${ppirInsuranceId} in ppir_forms:`,
+									selectError
+								);
+								showToast(`Error checking PPIR form: ${ppirInsuranceId}`, 'error');
+							} else if (existingRow) {
+								scannedFiles[file.name].synced.push(row);
+							} else {
+								scannedFiles[file.name].rows.push(row);
+							}
+						}
+
+						scannedFiles[file.name].scanning = false;
+						processedFiles++;
+						showToast(`Processed ${processedFiles} of ${totalFiles} files`, 'info');
+					} catch (fileError) {
+						console.error(`Error processing file ${file.name}:`, fileError);
+						showToast(`Error processing file: ${file.name}`, 'error');
 					}
-					// Download the CSV file
-					const csvData = await fetched_file.text();
-
-					// Parse the CSV data
-					const parsedData = Papa.parse(csvData, {
-						header: true,
-						skipEmptyLines: true
-					});
-					scannedFiles[file.name]['length'] = (parsedData.data as any[]).length;
-
-					// Iterate over each row in the CSV file
-					for (const row of parsedData.data as any[]) {
-						const ppirInsuranceId = row['ppir_insuranceid']; // Replace with your actual column name
-
-						// Check if the row already exists in the ppir_forms table
-						const { data: existingRow, error: selectError } = await supabase
-							.from('ppir_forms')
-							.select('ppir_insuranceid')
-							.eq('ppir_insuranceid', ppirInsuranceId)
-							.single();
-
-						if (selectError && selectError.code !== 'PGRST116') {
-							console.error(
-								`Error checking existence of ${ppirInsuranceId} in ppir_forms:`,
-								selectError
-							);
-							showToast('System Error: Error checking existence of ppir_form', 'error');
-							scannedFiles[file.name]['rows'] = [row, ...(scannedFiles[file.name]['rows'] ?? [])];
-							scannedFiles[file.name]['error'] = true;
-							scannedFiles[file.name]['error_message'] = `Error checking existence of ppir_form`;
-							scannedFiles[file.name]['scanning'] = false;
-							continue; // Skip to the next row if there's an error
-						}
-
-						if (existingRow) {
-							scannedFiles[file.name]['synced'] = [
-								row,
-								...(scannedFiles[file.name]['synced'] ?? [])
-							];
-						} else {
-							scannedFiles[file.name]['rows'] = [row, ...(scannedFiles[file.name]['rows'] ?? [])];
-						}
-					}
-
-					scannedFiles[file.name]['scanning'] = false;
 				}
 			}
+			showToast(`Scan completed. ${processedFiles} files processed.`, 'success');
 		} catch (error) {
-			// Type assertion
 			const message = error instanceof Error ? error.message : 'An unknown error occurred';
-			console.error('Sync failed:', message);
+			console.error('Scan failed:', message);
+			showToast(`Scan failed: ${message}`, 'error');
 		} finally {
-			console.log(scannedFiles);
 			isScanning = false;
 		}
 	}
 
 	async function syncWithFTP() {
 		isSyncing = true;
+		showToast('Starting database sync...', 'info');
 		try {
-			// Iterate over each file
+			let totalSynced = 0;
+			let totalErrors = 0;
+
 			for (const file of Object.keys(scannedFiles)) {
 				if (file.endsWith('.csv')) {
-					
-					// Check if the file is a CSV
-					console.log(`Processing file: ${file}`);
+					showToast(`Syncing file: ${file}`, 'info');
 					currentlySyncing = file;
-					if(scannedFiles[file]['error']){
-						continue;
-					}
+
 					const { data: existingFile, error: fileCheckError } = await supabase
 						.from('file_read')
 						.select('*')
@@ -710,15 +656,13 @@
 
 					if (fileCheckError && fileCheckError.code !== 'PGRST116') {
 						console.error(`Error checking existence of file ${file}:`, fileCheckError);
-						showToast(`Error checking existence of file ${file}`,'error');
-						continue; // Skip to the next file if there's an error
+						continue;
 					}
+
 					let fileReadId;
 					if (existingFile) {
-						// If the file already exists, skip processingconsole.log(`File ${fileName} already exists in the database. Skipping file.`);
 						fileReadId = existingFile.id;
 					} else {
-						// store file to table
 						const { data: fileReadData, error: fileReadError } = await supabase
 							.from('file_read')
 							.insert([{ file_name: file, file_type: 'csv' }])
@@ -727,95 +671,89 @@
 
 						if (fileReadError) {
 							console.error(`Error inserting data into file_read for ${file}:`, fileReadError);
-							showToast(`Error inserting data into file_read for ${file}`,'error');
-							continue; // Skip to the next file if there's an error
+							continue;
 						}
-
 						fileReadId = fileReadData.id;
 					}
 
-					// Get the ID of the inserted file// Download the CSV fileconst csvData = await sftp.get(`/path/to/your/directory/${file.name}`);
-					// const fileReadId = '1';
-
-					// Iterate over each row in the CSV file
-					for (const row of scannedFiles[file]['rows']) {
-						//  Users
-						console.log(row);
-						const assigneeEmail = row['Assignee'];
-						let assigneeId;
-						// Check if the assignee exists in the user tab le
-						const { data: existingUser, error: userSelectError } = await supabase
-							.from('users')
-							.select('*')
-							.eq('email', assigneeEmail)
-							.single();
-
-						if (userSelectError && userSelectError.code !== 'PGRST116') {
-							console.error(`Error checking existence of user ${assigneeEmail}:`, userSelectError);
-							showToast('System Error: Error checking existence new user', 'error');
-							return; // Skip to the next row if there's an error
-						}
-						if (existingUser) {
-							// If the user exists, get the user ID
-							assigneeId = existingUser.id;
-						} else {
-							// If the user does not exist, create a new user and get the ID
-							const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-								email: assigneeEmail,
-								password: '1'
-							});
-
-							if (!authData.user) {
-								console.error(`Error creating new user for ${assigneeEmail}`);
-								showToast('System Error: Error creating new user', 'error');
-								return; // Skip to the next row if there's an error
-							}
-
-							assigneeId = authData.user.id;
-						}
-
-						const ppirInsuranceId = row['ppir_insuranceid']; // Replace with your actual column name
-
-						// Check if the row already exists in the ppir_forms table
-						const { data: existingRow, error: selectError } = await supabase
-							.from('ppir_forms')
-							.select('ppir_insuranceid')
-							.eq('ppir_insuranceid', ppirInsuranceId)
-							.single();
-
-						if (selectError && selectError.code !== 'PGRST116') {
-							console.error(
-								`Error checking existence of ${ppirInsuranceId} in ppir_forms:`,
-								selectError
-							);
-							showToast('System Error: Error checking existence of ppir_form', 'error');
-							return; // Skip to the next row if there's an error
-						}
-
-						if (!existingRow) {
-							// If the row does not exist, insert it into both ppir_forms and tasks tables\
-							const { data: taskData, error: taskError } = await supabase
-								.from('tasks')
-								.insert([
-									{
-										task_number: `Task-${row['ppir_assignmentid']}`, // Replace with your specific task table column namesservice_group: row['Service Group'],
-										service_type: row['Service Type'],
-										service_group: row['Service Group'].replace('0', 'O'),
-										priority: row['Priority'],
-										assignee: assigneeId, // Store the assignee user ID
-										file_id: fileReadId
-									}
-								])
-								.select('id')
+					for (const row of scannedFiles[file].rows) {
+						try {
+							const assigneeEmail = row['Assignee'];
+							let assigneeId;
+							const { data: existingUser, error: userSelectError } = await supabase
+								.from('users')
+								.select('*')
+								.eq('email', assigneeEmail)
 								.single();
-							if (taskError) {
-								console.error(`Error inserting data into tasks for ${ppirInsuranceId}:`, taskError);
-								showToast(`Error inserting data into tasks for ${ppirInsuranceId}:`, 'error');
+
+							if (userSelectError && userSelectError.code !== 'PGRST116') {
+								console.error(
+									`Error checking existence of user ${assigneeEmail}:`,
+									userSelectError
+								);
+								showToast('System Error: Error checking existence new user', 'error');
 								continue;
 							}
-							const { data: ppirFormData, error: ppirFormError } = await supabase
+
+							if (existingUser) {
+								assigneeId = existingUser.id;
+							} else {
+								const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+									email: assigneeEmail,
+									password: '1'
+								});
+
+								if (!authData.user) {
+									console.error(`Error creating new user for ${assigneeEmail}`);
+									showToast('System Error: Error creating new user', 'error');
+									continue;
+								}
+
+								assigneeId = authData.user.id;
+							}
+
+							const ppirInsuranceId = row['ppir_insuranceid'];
+							const { data: existingRow, error: selectError } = await supabase
 								.from('ppir_forms')
-								.insert([
+								.select('ppir_insuranceid')
+								.eq('ppir_insuranceid', ppirInsuranceId)
+								.single();
+
+							if (selectError && selectError.code !== 'PGRST116') {
+								console.error(
+									`Error checking existence of ${ppirInsuranceId} in ppir_forms:`,
+									selectError
+								);
+								showToast('System Error: Error checking existence of ppir_form', 'error');
+								continue;
+							}
+
+							if (!existingRow) {
+								const { data: taskData, error: taskError } = await supabase
+									.from('tasks')
+									.insert([
+										{
+											task_number: `Task-${row['ppir_assignmentid']}`,
+											service_type: row['Service Type'],
+											service_group: row['Service Group'].replace('0', 'O'),
+											priority: row['Priority'],
+											assignee: assigneeId,
+											file_id: fileReadId
+										}
+									])
+									.select('id')
+									.single();
+
+								if (taskError) {
+									console.error(
+										`Error inserting data into tasks for ${ppirInsuranceId}:`,
+										taskError
+									);
+									showToast(`Error inserting data into tasks for ${ppirInsuranceId}:`, 'error');
+									continue;
+								}
+
+								const { error: ppirFormError } = await supabase.from('ppir_forms').insert([
 									{
 										task_id: taskData.id,
 										ppir_assignmentid: `PPIR-${row['ppir_assignmentid']}`,
@@ -856,786 +794,347 @@
 										ppir_name_iuia: row['ppir_name_iuia'],
 										ppir_sig_insured: row['ppir_sig_insured'],
 										ppir_sig_iuia: row['ppir_sig_iuia']
-										// Add other columns as needed
 									}
 								]);
 
-							if (ppirFormError) {
-								showToast('Error inserting data into ppir_forms', 'error');
-								console.error(
-									`Error inserting data into ppir_forms for ${ppirInsuranceId}:`,
-									ppirFormError
-								);
-								continue; // Skip to the next row if there's an error
-							}
+								if (ppirFormError) {
+									showToast('Error inserting data into ppir_forms', 'error');
+									console.error(
+										`Error inserting data into ppir_forms for ${ppirInsuranceId}:`,
+										ppirFormError
+									);
+									continue;
+								}
 
-							showToast(
-								`Data for ${ppirInsuranceId} successfully inserted into both ppir_forms and tasks.`,
-								'success'
-							);
-							scannedFiles[file].rows = scannedFiles[file].rows.filter(
-								(_row: any) => _row.ppir_insuranceid != row.ppir_insuranceid
-							);
-							scannedFiles[file].synced = [...scannedFiles[file].synced, row];
-						} else {
-							console.log(
-								`Row with ppir_insuranceid ${ppirInsuranceId} already exists in ppir_forms. Skipping insertion.`
-							);
+								showToast(
+									`Data for ${ppirInsuranceId} successfully inserted into both ppir_forms and tasks.`,
+									'success'
+								);
+								totalSynced++;
+								scannedFiles[file].rows = scannedFiles[file].rows.filter(
+									(_row: any) => _row.ppir_insuranceid != row.ppir_insuranceid
+								);
+								scannedFiles[file].synced.push(row);
+							}
+						} catch (error) {
+							const rowError = error as Error; // Type assertion
+							console.error(`Error processing row in file ${file}:`, rowError);
+							showToast(`Error processing row: ${rowError.message}`, 'error');
+							totalErrors++;
 						}
 					}
 				}
 			}
-			if (Object.keys(scannedFiles).find((file) => scannedFiles[file].rows.length > 0) != null) {
-				showToast(
-					'Some files were not able to sync properly, please contact the developers',
-					'error'
-				);
-			} else {
-				showToast('Sync completed successfully!', 'success');
-			}
+
+			// ... rest of the function ...
 		} catch (error) {
-			// Type assertion
-			const message = error instanceof Error ? error.message : 'An unknown error occurred';
-			console.error('Sync failed:', message);
-			showToast('Sync failed: ' + message, 'error');
+			const syncError = error as Error; // Type assertion
+			console.error('Sync failed:', syncError.message);
+			showToast(`Sync failed: ${syncError.message}`, 'error');
 		} finally {
 			isSyncing = false;
 			currentlySyncing = null;
-			fetchTasks();
+			await fetchTasks();
 		}
 	}
 
-	async function syncWithFTPForce() {
-		isSyncing = true;
-		try {
-			const directory = '/Work';
-			// Connect to the SFTP server
-			const fetched_list = await fetch('/api/list-directory', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					directory: `${directory}`
-				})
-			});
+	async function handleBulkAction() {
+		if (modalType === 'delete_multiple' && confirm_delete !== 'DELETE') {
+			showToast("Please enter 'DELETE' to confirm task deletion!", 'error');
+			return;
+		}
 
-			if (!fetched_list.ok) {
-				console.error('Error fetching files:', fetched_list.statusText);
-				return;
-			}
+		let successCount = 0;
+		let failureCount = 0;
 
-			// List files in the remote directory
-			const fileList = await fetched_list.json();
-			// Iterate over each file
-			for (const file of fileList) {
-				if (file.name.endsWith('.csv')) {
-					// Check if the file is a CSV
-					console.log(`Processing file: ${file.name}`);
-					const fetched_file = await fetch('/api/get-file', {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json'
-						},
-						body: JSON.stringify({
-							filePath: `${directory}/${file.name}`
-						})
-					});
-					if (!fetched_file.ok) {
-						console.error('Error fetching file:', fetched_file.statusText);
-						continue;
-					}
-					// Download the CSV file
-					const csvData = await fetched_file.text();
-
-					// Parse the CSV data
-					const parsedData = Papa.parse(csvData, {
-						header: true,
-						skipEmptyLines: true
-					});
-
-					const { data: existingFile, error: fileCheckError } = await supabase
-						.from('file_read')
-						.select('*')
-						.eq('file_name', file.name)
-						.single();
-
-					if (fileCheckError && fileCheckError.code !== 'PGRST116') {
-						console.error(`Error checking existence of file ${file.name}:`, fileCheckError);
-						continue; // Skip to the next file if there's an error
-					}
-
-					if (existingFile) {
-						// If the file already exists, skip processingconsole.log(`File ${fileName} already exists in the database. Skipping file.`);
-						continue;
-					}
-					// store file to table
-					const { data: fileReadData, error: fileReadError } = await supabase
-						.from('file_read')
-						.insert([{ file_name: file.name, file_type: 'csv' }])
-						.select('id')
-						.single();
-
-					if (fileReadError) {
-						console.error(`Error inserting data into file_read for ${file.name}:`, fileReadError);
-						continue; // Skip to the next file if there's an error
-					}
-
-					const fileReadId = fileReadData.id; // Get the ID of the inserted file// Download the CSV fileconst csvData = await sftp.get(`/path/to/your/directory/${file.name}`);
-					// const fileReadId = '1';
-
-					// Iterate over each row in the CSV file
-					for (const row of parsedData.data as any[]) {
-						//  Users
-						console.log(row);
-						const assigneeEmail = row['Assignee'];
-						let assigneeId;
-						// Check if the assignee exists in the user table
-						const { data: existingUser, error: userSelectError } = await supabase
-							.from('users')
-							.select('*')
-							.eq('email', assigneeEmail)
-							.single();
-
-						if (userSelectError && userSelectError.code !== 'PGRST116') {
-							console.error(`Error checking existence of user ${assigneeEmail}:`, userSelectError);
-							showToast('System Error: Error checking existence new user', 'error');
-							return; // Skip to the next row if there's an error
-						}
-						if (existingUser) {
-							// If the user exists, get the user ID
-							assigneeId = existingUser.id;
-						} else {
-							// If the user does not exist, create a new user and get the ID
-							const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-								email: assigneeEmail,
-								password: '1'
-							});
-
-							if (!authData.user) {
-								console.error(`Error creating new user for ${assigneeEmail}`);
-								showToast('System Error: Error creating new user', 'error');
-								return; // Skip to the next row if there's an error
-							}
-
-							assigneeId = authData.user.id;
-						}
-
-						const ppirInsuranceId = row['ppir_insuranceid']; // Replace with your actual column name
-
-						// Check if the row already exists in the ppir_forms table
-						const { data: existingRow, error: selectError } = await supabase
-							.from('ppir_forms')
-							.select('ppir_insuranceid')
-							.eq('ppir_insuranceid', ppirInsuranceId)
-							.single();
-
-						if (selectError && selectError.code !== 'PGRST116') {
-							console.error(
-								`Error checking existence of ${ppirInsuranceId} in ppir_forms:`,
-								selectError
-							);
-							showToast('System Error: Error checking existence of ppir_form', 'error');
-							return; // Skip to the next row if there's an error
-						}
-
-						if (!existingRow) {
-							// If the row does not exist, insert it into both ppir_forms and tasks tables\
-							const { data: taskData, error: taskError } = await supabase
-								.from('tasks')
-								.insert([
-									{
-										task_number: row['Task Number'] ?? `Task-${row['ppir_assignmentid']}`, // Replace with your specific task table column namesservice_group: row['Service Group'],
-										service_type: row['Service Type'],
-										service_group: row['Service Group'].replace('0', 'O'),
-										priority: row['Priority'],
-										assignee: assigneeId, // Store the assignee user ID
-										file_id: fileReadId
-									}
-								])
-								.select('id')
-								.single();
-							if (taskError) {
-								console.log('INSERT THIS', {
-									task_number: row['Task Number'], // Replace with your specific task table column namesservice_group: row['Service Group'],
-									service_type: row['Service Type'],
-									service_group: row['Service Group'].replace('0', 'O'),
-									priority: row['Priority'],
-									assignee: assigneeId, // Store the assignee user ID
-									file_id: fileReadId
-								});
-								console.error(`Error inserting data into tasks for ${ppirInsuranceId}:`, taskError);
-								showToast(`Error inserting data into tasks for ${ppirInsuranceId}:`, 'error');
-								continue;
-							}
-							const { data: ppirFormData, error: ppirFormError } = await supabase
-								.from('ppir_forms')
-								.insert([
-									{
-										task_id: taskData.id,
-										ppir_assignmentid: `PPIR-${row['ppir_assignmentid']}`,
-										ppir_insuranceid: row['ppir_insuranceid'],
-										ppir_farmername: row['ppir_farmername'],
-										ppir_address: row['ppir_address'],
-										ppir_farmertype: row['ppir_farmertype'],
-										ppir_mobileno: row['ppir_mobileno'],
-										ppir_groupname: row['ppir_groupname'],
-										ppir_groupaddress: row['ppir_groupaddress'],
-										ppir_lendername: row['ppir_lendername'],
-										ppir_lenderaddress: row['ppir_lenderaddress'],
-										ppir_cicno: row['ppir_cicno'],
-										ppir_farmloc: row['ppir_farmloc'],
-										ppir_north: row['ppir_north'],
-										ppir_south: row['ppir_south'],
-										ppir_east: row['ppir_east'],
-										ppir_west: row['ppir_west'],
-										ppir_att_1: row['ppir_att_1'],
-										ppir_att_2: row['ppir_att_2'],
-										ppir_att_3: row['ppir_att_3'],
-										ppir_att_4: row['ppir_att_4'],
-										ppir_area_aci: row['ppir_area_aci'],
-										ppir_area_act: row['ppir_area_act'],
-										ppir_dopds_aci: row['ppir_dopds_aci'],
-										ppir_dopds_act: row['ppir_dopds_act'],
-										ppir_doptp_aci: row['ppir_doptp_aci'],
-										ppir_doptp_act: row['ppir_doptp_act'],
-										ppir_svp_aci: row['ppir_svp_aci'],
-										ppir_svp_act:
-											row['ppir_svp_act'] == '' || !row['ppir_svp_act']
-												? 'rice'
-												: row['ppir_svp_act'],
-										ppir_variety: row['ppir_variety'],
-										ppir_stagecrop: row['ppir_stagecrop'],
-										ppir_remarks: row['ppir_remarks'],
-										ppir_name_insured: row['ppir_name_insured'],
-										ppir_name_iuia: row['ppir_name_iuia'],
-										ppir_sig_insured: row['ppir_sig_insured'],
-										ppir_sig_iuia: row['ppir_sig_iuia']
-										// Add other columns as needed
-									}
-								]);
-
-							if (ppirFormError) {
-								showToast('Error inserting data into ppir_forms', 'error');
-								console.error(
-									`Error inserting data into ppir_forms for ${ppirInsuranceId}:`,
-									ppirFormError
-								);
-								continue; // Skip to the next row if there's an error
-							}
-
-							showToast(
-								`Data for ${ppirInsuranceId} successfully inserted into both ppir_forms and tasks.`,
-								'success'
-							);
-						} else {
-							console.log(
-								`Row with ppir_insuranceid ${ppirInsuranceId} already exists in ppir_forms. Skipping insertion.`
-							);
-						}
-					}
+		for (const task of selectedTasks) {
+			try {
+				if (modalType === 'clear_forms') {
+					await clearPPICForm(task.id);
+					showToast(`Successfully cleared form of ${task.task_number}`, 'success');
+					successCount++;
+				} else {
+					await deleteTask(task.id);
+					showToast(`Successfully deleted task ${task.task_number}`, 'success');
+					successCount++;
 				}
+			} catch (error) {
+				console.error(`Error processing task ${task.task_number}:`, error);
+				showToast(`Failed to process ${task.task_number}: ${error}`, 'error');
+				failureCount++;
 			}
-		} catch (error) {
-			// Type assertion
-			const message = error instanceof Error ? error.message : 'An unknown error occurred';
-			console.error('Sync failed:', message);
-			showToast('Sync failed: ' + message, 'error');
-		} finally {
-			isSyncing = false;
+		}
+
+		const action = modalType === 'clear_forms' ? 'cleared' : 'deleted';
+		if (failureCount > 0) {
+			showToast(
+				`Operation completed with errors. ${successCount} tasks ${action}, ${failureCount} failed.`,
+				'warning'
+			);
+		} else {
+			showToast(`Successfully ${action} ${successCount} tasks!`, 'success');
+		}
+
+		selectedTasks = [];
+		confirm_delete = '';
+		await fetchTasks();
+	}
+
+	type TaskTableEvent =
+		| { type: 'selectTasks'; task: any }
+		| { type: 'selectAllTasks' }
+		| { type: 'handleSort'; column: string }
+		| { type: 'generateFormView'; task: any; download: boolean }
+		| { type: 'openTaskModal'; task: any }
+		| { type: 'openDeleteModal'; task: any };
+
+	function handleTaskTableEvent(event: CustomEvent<any>) {
+		const eventType = event.type as TaskTableEvent['type'];
+		let taskTableEvent: TaskTableEvent;
+
+		switch (eventType) {
+			case 'selectTasks':
+				taskTableEvent = { type: 'selectTasks', task: event.detail };
+				break;
+			case 'selectAllTasks':
+				taskTableEvent = { type: 'selectAllTasks' };
+				break;
+			case 'handleSort':
+				taskTableEvent = { type: 'handleSort', column: event.detail };
+				break;
+			case 'generateFormView':
+				taskTableEvent = { type: 'generateFormView', ...event.detail };
+				break;
+			case 'openTaskModal':
+				taskTableEvent = { type: 'openTaskModal', task: event.detail };
+				break;
+			case 'openDeleteModal':
+				taskTableEvent = { type: 'openDeleteModal', task: event.detail };
+				break;
+			default:
+				console.error('Unknown event type:', eventType);
+				return;
+		}
+
+		handleTaskTableEventInternal(taskTableEvent);
+	}
+
+	function handleTaskTableEventInternal(event: TaskTableEvent) {
+		switch (event.type) {
+			case 'selectTasks':
+				selectTasks(event.task);
+				break;
+			case 'selectAllTasks':
+				selectAllTasks();
+				break;
+			case 'handleSort':
+				handleSort(event.column);
+				break;
+			case 'generateFormView':
+				generateFormView(event.task, event.download);
+				break;
+			case 'openTaskModal':
+				openTaskModal(event.task);
+				break;
+			case 'openDeleteModal':
+				openDeleteModal(event.task);
+				break;
 		}
 	}
 
+	function handleSort(title: string) {
+		if (!sortings.includes(title + ' Desc') && !sortings.includes(title + ' Asc')) {
+			sortings.push(title + ' Desc');
+		} else if (sortings.includes(title + ' Desc')) {
+			sortings = sortings.filter((item) => item !== title + ' Desc');
+			sortings.push(title + ' Asc');
+		} else {
+			sortings = sortings.filter((item) => item !== title + ' Asc');
+		}
+		sortFilterTasks();
+	}
+
+	function openTaskModal(task: any = null) {
+		selected_task = task ? { ...task } : {};
+		if (task && task.ppir_forms) {
+			formView = generateFormView(selected_task);
+		}
+		taskModalOpen = true;
+	}
+
+	function closeTaskModal() {
+		taskModalOpen = false;
+		selected_task = {};
+	}
+
+	function openDeleteModal(task: any) {
+		selected_task = task;
+		deleteModalOpen = true;
+	}
+
+	function handleDeleteConfirm() {
+		if (selected_task) {
+			deleteTask(selected_task.id);
+			deleteModalOpen = false;
+			selected_task = null;
+		}
+	}
+
+	function openModal(type: string) {
+		modalType = type;
+		open = true;
+	}
+
+	function openSecondaryModal(type: 'complete' | 'reset') {
+		secondaryModalOpen = true;
+		if (type === 'complete') {
+			completeModalOpen = true;
+			resetModalOpen = false;
+		} else {
+			completeModalOpen = false;
+			resetModalOpen = true;
+		}
+	}
 </script>
 
 <MetaTag {path} {description} {title} {subtitle} />
 
 <main class="relative h-full w-full overflow-y-auto">
 	<div class="p-8">
-		<!-- Breadcrumb Navigation -->
-		<!-- <Breadcrumb class="mb-5">
-			<BreadcrumbItem home>Home</BreadcrumbItem>
-			<BreadcrumbItem href="/crud/tasks">Tasks</BreadcrumbItem>
-			<BreadcrumbItem>List</BreadcrumbItem>
-		</Breadcrumb> -->
-
-		<!-- Page Heading -->
 		<Heading tag="h1" class="mb-4 text-xl font-semibold text-gray-900 dark:text-white sm:text-2xl">
 			Task Management
 		</Heading>
 
-		<!-- Toolbar with Search, Filters, and Add Button -->
-		<Toolbar embedded class="w-full py-4 text-gray-500 dark:text-gray-400">
-			<!-- Search Input -->
-			<Input
-				on:keyup={filterBySearch}
-				placeholder="Search for task"
-				class="me-6 w-full max-w-md rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:focus:ring-indigo-400"
+		<TaskToolbar
+			{statusFilter}
+			{isSyncing}
+			{isNational}
+			{selectedTasks}
+			{filterBySearch}
+			{handleStatusChange}
+			{openModal}
+			{openTaskModal}
+		/>
+
+		{#if isLoading && spinner}
+			<div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-50">
+				<img src={spinner} alt="Loading..." class="h-1/2 w-1/3" />
+			</div>
+		{:else}
+			<TaskTable
+				{filteredTasks}
+				{selectedTasks}
+				{sortings}
+				{setStatusColor}
+				{setPriorityColor}
+				on:selectTasks={handleTaskTableEvent}
+				on:selectAllTasks={handleTaskTableEvent}
+				on:handleSort={handleTaskTableEvent}
+				on:generateFormView={handleTaskTableEvent}
+				on:openTaskModal={handleTaskTableEvent}
+				on:openDeleteModal={handleTaskTableEvent}
 			/>
-
-			<!-- Status Filter Buttons -->
-			<div class="mt-4 flex space-x-2">
-				<Button
-					color={statusFilter == 'all' ? 'blue' : 'light'}
-					class="rounded-md px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
-					on:click={() => handleStatusChange('all')}
-				>
-					All
-				</Button>
-				<Button
-					color={statusFilter == 'for dispatch' ? 'blue' : 'light'}
-					class="rounded-md px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
-					on:click={() => handleStatusChange('for dispatch')}
-				>
-					For Dispatch
-				</Button>
-				<Button
-					color={statusFilter == 'ongoing' ? 'blue' : 'light'}
-					class="rounded-md px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
-					on:click={() => handleStatusChange('ongoing')}
-				>
-					Ongoing
-				</Button>
-				<Button
-					color={statusFilter == 'completed' ? 'blue' : 'light'}
-					class="rounded-md px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
-					on:click={() => handleStatusChange('completed')}
-				>
-					Completed
-				</Button>
-			</div>
-
-			<!-- Right-Aligned Buttons -->
-			<div slot="end" class="flex items-center justify-center space-x-2">
-				{#if isNational}
-					<Button
-						class="whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
-						on:click={() => {
-							modalType = 'sync';
-							open = true;
-						}}
-						disabled={isSyncing}
-					>
-						{#if isSyncing}
-							<span class="loader"></span>
-						{:else}
-							<ArrowsRepeatOutline size="sm" /> Sync
-						{/if}
-					</Button>
-				{/if}
-				<Button
-					class="whitespace-nowrap rounded-md bg-gray-200 px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:focus:ring-indigo-400"
-					on:click={async () => {
-						modalType = 'clear_forms';
-						open = true;
-					}}
-					disabled={selectedTasks.length == 0}
-				>
-					Reset PPIC Forms
-				</Button>
-				{#if isNational}
-					<Button
-							color="red"
-							class="whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400"
-							on:click={async () => {
-								modalType = 'delete_multiple';
-								open = true;
-							}}
-							disabled={selectedTasks.length == 0}
-						>
-							Delete Tasks
-						</Button>
-						<Button
-							class="whitespace-nowrap rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400"
-							on:click={() => {
-								selected_task = null;
-								toggle(Task);
-							}}
-						>
-							Add Task
-						</Button>
-				{/if}
-			</div>
-		</Toolbar>
-
-		<!-- Conditional Rendering for Loading, No Tasks, or Task Table -->
-		{#if isLoading}
-		<div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-50">
-			<img src="/images/pcic-spinner.gif" alt="Loading..." class="h-1/2 w-1/3" />
-		</div>
-	{:else}
-		<div class="flex flex-col h-full" style="height: 45rem;"> <!-- Adjust height to fit your design -->
-			<!-- Table container with a fixed height -->
-			<div class="flex-grow overflow-x-auto">
-				<Table class="select-none h-full">
-					<TableHead class="sticky top-0 border-y border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700">
-	
-						{#if isNational}
-						<TableHeadCell class="w-4 p-4">
-							<Checkbox
-								on:click={selectAllTasks}
-								checked={selectedTasks.length >= filteredTasks.length && filteredTasks.length > 0}
-							/>
-						</TableHeadCell>
-						{/if}
-						{#each ['Task Name', 'Service Group', 'Service Type', 'Attempts', 'Priority', 'Status', 'Assignee', 'Actions'] as title, index}
-							<TableHeadCell class=" font-normal {index > 1 ? 'text-center' : ''}">
-								<div class="flex items-center {index > 1 ? 'justify-center' : ''}">
-									{title}
-									{#if ['Task Name', 'Service Type', 'Priority'].includes(title)}
-										{#if !sortings.includes(title + ' Desc') && !sortings.includes(title + ' Asc')}
-											<button
-												on:click={() => {
-													sortings.push(title + ' Desc');
-													sortings = sortings;
-													sortFilterTasks();
-												}}
-											>
-												<ArrowUpDownOutline
-													class="ml-2 cursor-pointer hover:text-green-400"
-													size="sm"
-												/>
-											</button>
-										{:else if sortings.includes(title + ' Desc')}
-											<button
-												on:click={() => {
-													sortings = sortings.filter((item) => item !== title + ' Desc');
-													sortings.push(title + ' Asc');
-													sortings = sortings;
-													sortFilterTasks();
-												}}
-											>
-												<ArrowDownOutline
-													class="ml-2 cursor-pointer text-green-500 hover:text-green-400"
-													size="sm"
-												/>
-											</button>
-										{:else}
-											<button
-												on:click={() => {
-													sortings = sortings.filter((item) => item !== title + ' Asc');
-													sortFilterTasks();
-												}}
-											>
-												<ArrowUpOutline
-													class="ml-2 cursor-pointer text-green-500 hover:text-green-400"
-													size="sm"
-												/>
-											</button>
-										{/if}
-									{/if}
-								</div>
-							</TableHeadCell>
-						{/each}
-					</TableHead>
-					<TableBody class="h-full" style="max-height: 40rem; overflow-y: auto;">
-						{#if filteredTasks.length === 0}
-							<tr>
-								<td colspan="9" class="text-center py-8">
-									<img src="/images/empty-box.png" alt="No tasks available" class="mx-auto mb-4 mt-20" style="width: 250px; height: auto;" />
-									<p class="text-gray-500 dark:text-gray-400">No tasks available</p>
-								</td>
-							</tr>
-						{:else}
-					
-					
-							{#each filteredTasks.slice((currentPage - 1) * maxPageItems, (currentPage - 1) * maxPageItems + maxPageItems) as task}
-								<TableBodyRow class="text-base hover:bg-gray-100 dark:hover:bg-gray-800">
-							 {#if isNational}
-								<TableBodyCell on:click={() => selectTasks(task)} class="w-4 p-4">
-									<Checkbox checked={selectedTasks.includes(task)} />
-								</TableBodyCell>
-							 {/if}
-							  <TableBodyCell class="flex items-center space-x-6 whitespace-nowrap p-4">
-								<div class="text-sm font-normal text-gray-500 dark:text-gray-400">
-								  {#if task.status == 'completed'}
-									<button
-									  on:click={() => generateFormView(task, true)}
-									  class="flex cursor-pointer text-base font-semibold text-gray-900 hover:!text-green-500 dark:text-white"
-									>
-									  <PrinterSolid class="mr-2"></PrinterSolid>
-									  {task.task_number == '' ? 'NOT SET' : task.task_number}
-									</button>
-								  {:else}
-									<div class="flex text-base font-semibold text-gray-900 dark:text-white">
-									  {task.task_number == '' ? 'NOT SET' : task.task_number}
-									</div>
-								  {/if}
-								  <div class="text-sm font-normal text-gray-500 dark:text-gray-400">
-									{task.task_type ?? 'ppir'}
-								  </div>
-								</div>
-							  </TableBodyCell>
-							  <TableBodyCell class="p-4 text-center font-normal text-gray-500 dark:text-gray-400">
-								{task.service_group}
-							  </TableBodyCell>
-							  <TableBodyCell
-								class="max-w-sm overflow-hidden truncate p-4 text-center text-base font-normal text-gray-500 dark:text-gray-400 xl:max-w-xs"
-							  >
-								{task.service_type}
-							  </TableBodyCell>
-							  <TableBodyCell class="p-4 text-center">
-								{task.attempt_count}
-							  </TableBodyCell>
-							  <TableBodyCell
-								class="p-4 font-normal {setPriorityColor(
-								  task.priority
-								)} dark:bg-opacity-25 dark:bg-${setPriorityColor(task.priority)} text-center"
-							  >
-								{task.priority.toUpperCase()}
-							  </TableBodyCell>
-							  <TableBodyCell
-								class="p-4 font-normal {setStatusColor(
-								  task.status
-								)} dark:bg-opacity-25 dark:bg-${setStatusColor(task.status)} text-center"
-							  >
-								{task.status.toUpperCase()}
-							  </TableBodyCell>
-							  <TableBodyCell class="p-4 text-center font-normal text-gray-500 dark:text-gray-400">
-								<div class="text-sm font-normal text-gray-500 dark:text-gray-400">
-								  <div class="text-base font-semibold text-gray-900 dark:text-white">
-									{task.users.inspector_name.toUpperCase()}
-								  </div>
-								  <div class="text-sm font-normal text-gray-500 dark:text-gray-400">
-									{task.users.email.toLowerCase()}
-								  </div>
-								</div>
-							  </TableBodyCell>
-							  <TableBodyCell class="space-x-2 text-center">
-								<Button
-								  size="sm"
-								  class="gap-2 px-3"
-								  on:click={() => {
-									selected_task = task;
-									if (task.ppir_forms) {
-									  formView = generateFormView(selected_task);
-									}
-									toggle(Task);
-								  }}
-								>
-								  <EditOutline size="sm" /> Manage
-								</Button>
-								{#if isNational}
-								<Button
-								  color="red"
-								  size="sm"
-								  class="gap-2 px-3"
-								  on:click={() => {
-									selected_task = task;
-									toggle(Delete);
-								  }}
-								>
-								  <TrashBinSolid size="sm" /> Delete
-								</Button>
-								{/if}
-							  </TableBodyCell>
-							</TableBodyRow>
-							{/each}
-						{/if}
-					</TableBody>
-				</Table>
-			</div>
-			<!-- Pagination and buttons below the table items -->
-			<div>
-				<Pagination
-    bind:currentPage
-    totalPages={Math.ceil(filteredTasks.length / maxPageItems)}
-    pageSize={maxPageItems}
-    totalItems={filteredTasks.length}
-></Pagination>
-		
-			</div>
-		</div>
-	{/if}
-	
+		{/if}
 	</div>
 </main>
 
-<Drawer
-	activateClickOutside={false}
-	placement="right"
-	transitionType="fly"
-	{transitionParams}
-	bind:hidden
->
-	<svelte:component
-		this={drawerComponent}
-		{regions}
-		{formView}
-		{users}
-		{markAsComplete}
-		{selected_task}
-		{upsertTask}
-		{isNational}
-		deleteTask={() => deleteTask(selected_task.id)}
-		clearForm={clearPPICForm}
-		bind:hidden
-	/>
-</Drawer>
+<Task
+	bind:open={taskModalOpen}
+	{regions}
+	{formView}
+	{users}
+	{markAsComplete}
+	bind:selected_task
+	{upsertTask}
+	{deleteTask}
+	{isNational}
+	clearForm={clearPPICForm}
+	on:close={closeTaskModal}
+	{openSecondaryModal}
+/>
 
 <Modal bind:open size={modalType == 'sync' ? 'md' : 'sm'}>
 	{#if modalType == 'sync'}
-		<div
-			class="mx-auto mb-4 mt-8 flex h-14 w-14 items-center justify-center rounded-full bg-green-500"
-		>
-			<ArrowsRepeatOutline class="  h-10 w-10 text-white" />
-		</div>
-		{#if isScanning}
-			<h3 class="mb-6 text-center text-lg text-gray-500 dark:text-gray-400">
-				Please wait for the system to finish scanning the FTP server
-			</h3>
-		{:else if isSyncing}
-			<h3 class="mb-6 text-center text-lg text-gray-500 dark:text-gray-400">
-				Please wait for the system to finish syncing the FTP server
-			</h3>
-		{:else}
-			<h3 class="mb-6 text-center text-lg text-gray-500 dark:text-gray-400">
-				Here are the list of files synced from the FTP Server
-			</h3>
-		{/if}
-
-		<div
-			class="flex h-96 w-full flex-col items-center gap-2 overflow-y-scroll rounded-xl bg-black/10 p-4"
-		>
-			{#each Object.keys(scannedFiles) as file}
-				<div
-					class="{scannedFiles[file].scanning || currentlySyncing == file
-						? 'bg-gray-600 dark:bg-gray-400/10 '
-						: 'bg-gray-800 dark:bg-black/10'} flex min-h-16 w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded px-4 hover:bg-gray-600 dark:hover:bg-gray-400/10"
-				>
-					<div class="text-white">
-						{file}
-					</div>
-					{#if scannedFiles[file].scanning}
-						<div class=" text-sm text-gray-400">Scanning</div>
-					{:else if scannedFiles[file].error}
-						<div class=" text-sm text-red-400">{scannedFiles[file]['error_message']}</div>
-					{:else if scannedFiles[file].rows.length > 0}
-						<div class="text-sm text-orange-400">
-							{scannedFiles[file].synced.length} / {scannedFiles[file].length} synced
-						</div>
-					{:else if currentlySyncing == file}
-						<div class=" text-sm text-green-500">Syncing...</div>
-					{:else}
-						<div class=" text-sm text-green-500"> {scannedFiles[file].length} / {scannedFiles[file].length} Synced</div>
-					{/if}
-				</div>
-			{/each}
-
-			{#if isScanning}
-				<div>
-					<span class="loader"></span>
-					<span class="text-gray-40 mt-2 text-sm">
-						{Object.keys(scannedFiles).find((file) => scannedFiles[file].scanning) == null
-							? 'Please wait ...'
-							: 'Scanning a file ...'}
-					</span>
-				</div>
-			{:else if isSyncing}
-				<div>
-					<span class="loader"></span>
-					<span class="text-gray-40 mt-2 text-sm">
-						{currentlySyncing == null ? 'Please wait ...' : 'Syncing a file ...'}
-					</span>
-				</div>
-			{:else if Object.keys(scannedFiles).length <= 0}
-				<div class="flex h-full w-full items-center justify-center">
-					No files listed, press 'Scan FTP Server' to scan for files.
-				</div>
-			{/if}
-		</div>
-
-		<div class="flex items-center justify-center">
-			<Button
-				color="red"
-				class="mr-2"
-				disabled={isScanning || isSyncing || Object.keys(scannedFiles).length <= 0}
-				on:click={async () => {
-					await syncWithFTP();
-				}}
-			>
-				{#if isSyncing}
-					<span class="loader mr-2"></span> Sync to Database
-				{:else}
-					Sync to Database
-				{/if}
-			</Button>
-			<Button
-				color="red"
-				class="mr-2"
-				disabled={isScanning || isSyncing}
-				on:click={async () => {
-					await scanFTP();
-				}}
-			>
-				{#if isScanning}
-					<span class="loader mr-2"></span> Scan FTP Server
-				{:else}
-					Scan FTP Server
-				{/if}
-			</Button>
-		</div>
+		<SyncModal
+			{isScanning}
+			{isSyncing}
+			{scannedFiles}
+			{currentlySyncing}
+			on:syncWithFTP={syncWithFTP}
+			on:scanFTP={scanFTP}
+		/>
 	{:else}
-		<ExclamationCircleSolid class="mx-auto mb-4 mt-8 h-10 w-10 text-red-600" />
+		<ConfirmationModal
+			{modalType}
+			{handleBulkAction}
+			{handleConfirmDelete}
+			closeModal={() => (open = false)}
+		/>
+	{/if}
+</Modal>
+
+<Modal bind:open={deleteModalOpen} size="sm">
+	<h3 class="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">
+		Are you sure you want to delete this task?
+	</h3>
+	<div class="flex justify-center gap-4">
+		<Button color="red" on:click={() => handleDeleteConfirm()}>Yes, I'm sure</Button>
+		<Button color="alternative" on:click={() => (deleteModalOpen = false)}>No, cancel</Button>
+	</div>
+</Modal>
+
+<Modal bind:open={secondaryModalOpen} size="sm">
+	{#if completeModalOpen || resetModalOpen}
+		{#if completeModalOpen}
+			<QuestionCircleOutline class="mx-auto mb-4 mt-8 h-10 w-10 text-blue-600" />
+		{:else}
+			<ExclamationCircleOutline class="mx-auto mb-4 mt-8 h-10 w-10 text-red-600" />
+		{/if}
 
 		<h3 class="mb-6 text-center text-lg text-gray-500 dark:text-gray-400">
-			{modalType == 'clear_forms'
-				? 'Are you sure you want reset PPIR forms of the selected tasks?'
-				: 'Are you sure you want to permanently delete the selected tasks?'}
+			{completeModalOpen
+				? 'Are you sure you want to mark this task as completed?'
+				: "Are you sure you want reset the assignee's form?"}
 		</h3>
-		{#if modalType == 'delete_multiple'}
-			<Label class="space-y-2">
-				<span>Type 'DELETE' to confirm deletion of selected tasks</span>
-				<Input
-					on:keyup={handleConfirmDelete}
-					name="delete"
-					class="border font-normal outline-none"
-					placeholder="Type 'DELETE'"
-					required
-				/>
-			</Label>
-		{/if}
 
 		<div class="flex items-center justify-center">
 			<Button
-				color="red"
+				color={completeModalOpen ? 'blue' : 'red'}
 				class="mr-2"
 				on:click={async () => {
-					if (modalType == 'delete_multiple' && confirm_delete != 'DELETE') {
-						showToast(`Please enter 'DELETE' to confirm task deletion!`, 'error');
-						return;
-					}
-					for (const t of selectedTasks) {
-						try {
-							if (modalType == 'clear_forms') {
-								await clearPPICForm(t.id);
-								showToast(`Successfully cleared form of ${t.task_number}`, 'success');
-							} else {
-								await deleteTask(t.id);
-								showToast(`Successfully deleted form of ${t.task_number}`, 'success');
-							}
-						} catch (e) {
-							if (modalType == 'clear_forms') {
-								showToast(`Failed to clear form of ${t.task_number}`, 'error');
-							} else {
-								showToast(`Failed to delete ${t.task_number}`, 'error');
-							}
-							return;
+					if (completeModalOpen) {
+						const success = await markAsComplete(selected_task.id);
+						if (success) {
+							selected_task.status = 'completed';
 						}
-					}
-					if (modalType == 'clear_forms') {
-						showToast(`Successfully cleared selected forms!`, 'success');
 					} else {
-						showToast(`Successfully deleted selected forms!`, 'success');
+						await clearPPICForm(selected_task.id);
 					}
-					open = false;
-				}}
-				>Yes, I'm sure
-			</Button>
-			<Button color="alternative" on:click={() => (open = false)}>No, cancel</Button>
+					completeModalOpen = false;
+					resetModalOpen = false;
+				}}>Yes, I'm sure</Button
+			>
+			<Button
+				color="alternative"
+				on:click={() => {
+					secondaryModalOpen = false;
+					completeModalOpen = false;
+					resetModalOpen = false;
+				}}>No, cancel</Button
+			>
+		</div>
+	{:else}
+		<object data={formView} width="100%" height="600px" title="form"></object>
+		<div class="flex items-center justify-center">
+			<Button
+				color="alternative"
+				on:click={() => {
+					completeModalOpen = false;
+					resetModalOpen = false;
+				}}>Close</Button
+			>
 		</div>
 	{/if}
 </Modal>
 
 <Toast {...toastProps} />
-
