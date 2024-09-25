@@ -1,4 +1,5 @@
 <script lang="ts">
+	// Same script code as before
 	import spinner from '$lib/assets/pcic-spinner.gif';
 	import { onMount, createEventDispatcher } from 'svelte';
 	import { User, AlertCircle, ArrowLeft } from 'lucide-svelte';
@@ -6,13 +7,11 @@
 	import mapboxgl from 'mapbox-gl';
 	import { supabase_content } from '../../../supabase';
 
-	// Props passed from the dashboard component
 	export let userId: string;
 	export let selectedMonth: number;
 	export let selectedDay: number;
 	export let selectedWeek: number;
 
-	// Interface for the user logs fetched from Supabase
 	interface SupabaseLog {
 		timestamp: string;
 		activity: string;
@@ -21,17 +20,15 @@
 		task_id: string | null;
 	}
 
-	// Interface for tasks
 	interface Task {
 		id: string;
 		task_number: string;
 	}
 
-	// State variables
 	let userLogs: SupabaseLog[] = [];
 	let filteredLogs: SupabaseLog[] = [];
-	let tasks: Task[] = [];  // Store the list of tasks that match the user's logs
-	let selectedTaskId: string | null = null;  // To track the selected task from the dropdown
+	let tasks: Task[] = [];
+	let selectedTaskId: string | null = null;
 	let isLoading = true;
 	let dataError: string | null = null;
 	let map: mapboxgl.Map | null = null;
@@ -39,15 +36,13 @@
 
 	const dispatch = createEventDispatcher();
 
-	// Mapbox access token
 	mapboxgl.accessToken = 'pk.eyJ1IjoicXVhbmJ5ZGV2cyIsImEiOiJjbHplNmtybm4wbHZsMmlva3pkbDY2bG1yIn0.I-82-7hu310FPXYvKTIMMQ';
 
-	// Fetch user logs from Supabase
 	async function fetchUserLogs() {
 		try {
 			const { data, error } = await supabase_content
 				.from('user_logs')
-				.select('timestamp, activity, sync_status, longlat, task_id')  // Fetch task_id
+				.select('timestamp, activity, sync_status, longlat, task_id')
 				.eq('user_id', userId)
 				.order('timestamp', { ascending: false });
 
@@ -57,9 +52,8 @@
 				dataError = 'No timeline available for this user.';
 			} else {
 				userLogs = data;
-				// Fetch task information for the dropdown (only those in the user's logs)
 				await fetchTasksForUser();
-				filterLogs();  // Apply filter after fetching logs
+				filterLogs();
 			}
 		} catch (error) {
 			dataError = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -69,14 +63,12 @@
 		}
 	}
 
-	// Fetch tasks that are related to the task_ids in the user's logs based on the selected month, day, and week
 	async function fetchTasksForUser() {
-		// Filter the logs first to apply the month, day, and week filters
 		const filteredLogsForTasks = userLogs.filter((log) => {
 			const logDate = new Date(log.timestamp);
-			const logMonth = logDate.getMonth();  // 0-based month
+			const logMonth = logDate.getMonth();
 			const logDay = logDate.getDate();
-			const logWeek = Math.ceil(logDay / 7);  // Week calculation
+			const logWeek = Math.ceil(logDay / 7);
 
 			return (
 				logMonth === selectedMonth &&
@@ -85,7 +77,6 @@
 			);
 		});
 
-		// Get the distinct task_ids from the filtered logs
 		const taskIds = [...new Set(filteredLogsForTasks.map(log => log.task_id).filter(Boolean))];
 
 		if (taskIds.length === 0) {
@@ -94,11 +85,10 @@
 		}
 
 		try {
-			// Fetch task details for the task_ids found in user logs
 			const { data, error } = await supabase_content
 				.from('tasks')
 				.select('id, task_number')
-				.in('id', taskIds);  // Only fetch tasks that match the task_ids from the user logs
+				.in('id', taskIds);
 
 			if (error) throw error;
 
@@ -108,15 +98,13 @@
 		}
 	}
 
-	// Filter logs based on selected task, month, day, and week
 	function filterLogs() {
 		filteredLogs = userLogs.filter((log) => {
 			const logDate = new Date(log.timestamp);
-			const logMonth = logDate.getMonth();  // 0-based month
+			const logMonth = logDate.getMonth();
 			const logDay = logDate.getDate();
-			const logWeek = Math.ceil(logDay / 7);  // Week calculation
+			const logWeek = Math.ceil(logDay / 7);
 
-			// Apply filters for selected task and date
 			return (
 				(selectedTaskId ? log.task_id === selectedTaskId : true) &&
 				logMonth === selectedMonth &&
@@ -126,14 +114,12 @@
 		});
 	}
 
-	// Initialize the map
 	function initializeMap() {
 		const mapStyle = getMapStyle();
 
 		if (filteredLogs.length > 0 && filteredLogs[0].longlat) {
 			const [lng, lat] = filteredLogs[0].longlat.split(',').map(Number);
 
-			// Validate coordinates
 			if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
 				console.error('Invalid latitude or longitude values:', { lat, lng });
 				return;
@@ -150,19 +136,16 @@
 		}
 	}
 
-	// Get the current map style based on the theme
 	function getMapStyle(): string {
 		const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
 		return isDarkMode ? 'mapbox://styles/mapbox/dark-v10' : 'mapbox://styles/mapbox/light-v10';
 	}
 
-	// Update the map location
 	function updateMapLocation(longlat: string | null) {
 		if (!map || !longlat) return;
 
 		const [lng, lat] = longlat.split(',').map(Number);
 
-		// Validate coordinates
 		if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
 			console.error('Invalid latitude or longitude values:', { lat, lng });
 			return;
@@ -182,7 +165,6 @@
 		});
 	}
 
-	// Listener for theme change to update the map style dynamically
 	window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
 		if (map) {
 			const newStyle = e.matches
@@ -192,12 +174,10 @@
 		}
 	});
 
-	// Function to go back to the previous screen
 	function goBack() {
 		dispatch('back');
 	}
 
-	// Fetch user logs and initialize the map on mount
 	onMount(() => {
 		fetchUserLogs().then(() => {
 			if (filteredLogs.length > 0) {
@@ -226,8 +206,8 @@
 		<select
 			id="taskFilter"
 			bind:value={selectedTaskId}
-			class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-			on:change={filterLogs}  
+			class="dropdown-transparent mt-1 block w-full pl-3 pr-10 py-3 text-base border-2 border-blue-500 bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-300 sm:text-sm rounded-md"
+			on:change={filterLogs} 
 		>
 			<option value={null}>All Tasks</option>
 			{#each tasks as task}
@@ -315,5 +295,17 @@
 	.custom-scrollbar::-webkit-scrollbar-thumb {
 		background-color: #4a5568;
 		border-radius: 4px;
+	}
+
+	/* Transparent dropdown */
+	.dropdown-transparent {
+		background-color: transparent;
+		border: none;
+		color: inherit;
+	}
+
+	.dropdown-transparent option {
+		background-color: transparent;
+		color: inherit;
 	}
 </style>
