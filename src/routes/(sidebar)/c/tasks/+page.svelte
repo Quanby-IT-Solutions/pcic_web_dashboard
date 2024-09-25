@@ -74,9 +74,12 @@
 
 	let scannedFiles: any = {};
 
+	let regions: any[];
+
 	$: ({ supabase } = data);
 
 	onMount(async () => {
+	
 		current_user = (await supabase.auth.getUser()).data.user;
 		const { data: user, error } = await supabase
 			.from('users')
@@ -87,6 +90,7 @@
 		await fetchUsers();
 		await fetchTasks();
 		await fetchRegions();
+		
 	});
 
 	const handleConfirmDelete = (event: any) => {
@@ -98,7 +102,7 @@
 		currentPage = 1;
 		sortFilterTasks();
 	};
-	let regions: any[];
+
 
 	const fetchRegions = async () => {
 		try {
@@ -112,6 +116,7 @@
 			}
 
 			regions = regionsData;
+
 
 			if (regions.length === 0) {
 				console.warn(
@@ -305,7 +310,21 @@
 		return true;
 	};
 
-	const upsertTask = async (upsertData: any, row: any = {}) => {
+	const upsertTask = async (upsertData: any, row: any = {}, create:boolean = false) => {
+		if(create){
+			const { data: existingRow, error: selectError } = await supabase
+								.from('ppir_forms')
+								.select('ppir_insuranceid')
+								.eq('ppir_insuranceid', row['ppir_insuranceid']);
+
+			if(existingRow){
+				showToast(`PPIR Insurance ID already exists`, 'error');
+				return false;
+			}
+			alert(JSON.stringify(selectError));
+
+		}
+		
 		const invalidData = Object.keys(upsertData).find(
 			(key) => key != 'id' && (upsertData[key] == null || upsertData[key].trim() == '')
 		);
@@ -318,6 +337,8 @@
 			showToast(`PPIR Insurance ID and Assignment ID must be set!`, 'error');
 			return false;
 		}
+
+		
 
 		const { data: taskData, error } = await supabase
 			.from('tasks')
@@ -336,6 +357,7 @@
 			return false;
 		}
 
+		
 		const form_response = await supabase.from('ppir_forms').upsert({
 			task_id: taskData.id,
 			ppir_assignmentid: row['ppir_assignmentid'],
@@ -415,6 +437,7 @@
 	};
 
 	const fetchTasks = async () => {
+	
 		try {
 			const { data, error } = await supabase
 				.from('tasks')
@@ -964,7 +987,7 @@
 
 	function closeTaskModal() {
 		taskModalOpen = false;
-		selected_task = {};
+		selected_task = null;
 	}
 
 	function openDeleteModal(task: any) {
@@ -1022,6 +1045,7 @@
 			</div>
 		{:else}
 			<TaskTable
+			{isNational}
 				{filteredTasks}
 				{selectedTasks}
 				{sortings}
@@ -1044,6 +1068,7 @@
 	{formView}
 	{users}
 	{markAsComplete}
+	{isNational}
 	bind:selected_task
 	{upsertTask}
 	{deleteTask}

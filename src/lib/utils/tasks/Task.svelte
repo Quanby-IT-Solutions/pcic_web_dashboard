@@ -18,10 +18,11 @@
 	const dispatch = createEventDispatcher();
 	export let open: boolean = false;
 	export let users: any[] = [];
-	export let selected_task: any = {};
+	export let selected_task: any = null;
 	export let upsertTask: any = null;
 	export let formView: any;
 	export let regions: any[] = [];
+	export let isNational:boolean = false;
 	export let openSecondaryModal: (type: 'complete' | 'reset') => void;
 	export let markAsComplete: (taskId: string) => Promise<boolean>;
 	export let clearForm: (taskId: string) => Promise<void>;
@@ -40,6 +41,7 @@
 	let viewForm = false;
 	let completeModalOpen = false;
 	let resetModalOpen = false;
+	let updating = false;
 
 	let ppir_form_initial_columns = [
 		'ppir_assignmentid',
@@ -129,6 +131,9 @@
 		priority = event.target.value;
 	};
 
+	const handlePPIRFormChange = (event: any, ppir_field:string) => {
+		ppir_form[ppir_field] = event.target.value;
+	};
 	const handleTaskNameChange = (event: any) => {
 		task_name = event.target.value;
 	};
@@ -164,7 +169,7 @@
 	};
 
 	const getTypeFromPO = (PO: string) => {
-		return `${regions.find((region) => region.region_code == PO).region_name} PPIR`;
+		return `${regions.find((region) => region.region_code == PO)?.region_name} PPIR`;
 	};
 
 	function isFormValid() {
@@ -186,7 +191,8 @@
 					priority: priority,
 					assignee: selected_user ? selected_user.id : null,
 					status: status,
-					task_type: 'ppir'
+					task_type: 'ppir',
+					create: selected_task && selected_task.id  == null,
 				},
 				ppir_form
 			);
@@ -203,29 +209,33 @@
 	<Heading tag="h1" class="mb-6 text-lg font-semibold uppercase">
 		{selected_task && selected_task.id ? 'Update Task' : 'Add New Task'}
 	</Heading>
-	<form on:submit|preventDefault={handleSubmit}>
+
 		<div class="space-y-4">
 			<Label class="space-y-2">
 				<span>Name</span>
 				<Input
+					disabled={!isNational}
 					name="title"
 					class="border font-normal outline-none"
 					placeholder="Type task name"
 					value={task_name}
 					on:change={handleTaskNameChange}
-					required
+
+					
 				/>
 			</Label>
 
 			<Label class="space-y-2">
 				<span>Service Group</span>
 				<Select
+					value={service_group}
 					disabled={regions.length == 1}
 					class="border-gray-300 font-normal outline-none"
-					bind:value={service_group}
-					required
+					on:change={handlePOChange}
+
+					
 				>
-					<option value={null} selected>Select Type</option>
+					<option value={'asd'} selected>Select Type</option>
 					{#if regions.length == 1}
 						{#each regions as region}
 							<option selected value={region.region_code}>{region.region_code}</option>
@@ -245,20 +255,23 @@
 			<Label class="space-y-2">
 				<span>Service Type</span>
 				<Input
+					readonly
 					name="group"
 					class="border font-normal outline-none"
-					readonly
+					
 					placeholder="None"
 					value={service_group ? getTypeFromPO(service_group) : ''}
-					required
+					
 				/>
 			</Label>
 			<Label class="space-y-2">
 				<span>Priority</span>
 				<Select
+					disabled={!isNational}
 					class="border-gray-300 font-normal outline-none"
+					value={priority}
 					on:change={handlePrioChange}
-					required
+					
 				>
 					<option value={null} selected>Set Priority</option>
 					{#each ['Low', 'Medium', 'High'] as prio}
@@ -275,6 +288,7 @@
 				<span>Assignee</span>
 				<div class="relative w-full">
 					<Button
+						disabled={!isNational}
 						class="flex w-full items-center justify-between rounded-lg border border-gray-300 bg-gray-50 p-3 text-gray-700 outline-none hover:bg-gray-100 focus:ring-2 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:ring-2 dark:focus:ring-green-500"
 						on:click={() => (searchModalOpen = !searchModalOpen)}
 					>
@@ -311,7 +325,7 @@
 									<button
 										type="button"
 										class="w-full cursor-pointer p-2 text-left text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-										on:click={() => handleUserSelect(user)}
+										on:click={() => {handleUserSelect(user)}}
 									>
 										{user.inspector_name}
 									</button>
@@ -326,10 +340,12 @@
 				<Label class="space-y-2">
 					<span>{ppir_col.replaceAll('_', ' ')}</span>
 					<Input
+						disabled={!isNational || (ppir_col != 'ppir_insuranceid' && ppir_col != 'ppir_assignmentid') || selected_task && selected_task.id }
 						name="title"
 						class="border font-normal outline-none"
 						placeholder="Type {ppir_col.replaceAll('_', ' ')}"
-						bind:value={ppir_form[ppir_col]}
+						value={ppir_form[ppir_col]}
+						on:change={(event)=>{handlePPIRFormChange(event,ppir_col)}}
 					/>
 				</Label>
 			{/each}
@@ -345,15 +361,18 @@
 						}}
 						class="mb-2 w-full">View Form</Button
 					>
+					{#if isNational}
 					<Button color="blue" on:click={openEditPPIRForm} class="mb-2 w-full"
 						>Edit PPIR Form</Button
 					>
 					<Button on:click={() => openSecondaryModal('reset')} color="red" class="mb-2 w-full">
 						Clear Form
 					</Button>
+					{/if}
 				</Label>
 
 				<!-- {#if selected_task.status != 'completed'} -->
+				{#if isNational}
 				<Label class="space-y-2">
 					<span>Status</span>
 					<Button
@@ -368,15 +387,15 @@
 						{selected_task.status === 'completed' ? 'Completed' : 'Mark as Complete'}
 					</Button>
 				</Label>
+				{/if}
 			{/if}
 
 			<div class="flex w-full justify-center space-x-4 pb-4">
+				{#if isNational}
 				<Button
+				disabled={updating}
 					on:click={async () => {
-						if (task_name.trim() === '') {
-							// Show an error message or handle empty task name
-							return;
-						}
+						updating= true;
 						const success = await upsertTask(
 							{
 								id: selected_task?.id,
@@ -386,11 +405,12 @@
 								priority: priority,
 								assignee: selected_user ? selected_user.id : null,
 								status: status,
-								task_type: 'ppir'
+								task_type: 'ppir',
+	
 							},
-							ppir_form
+							ppir_form, selected_task && selected_task.id  == null
 						);
-
+						updating = false;
 						if (success) {
 							dispatch('close');
 						}
@@ -398,16 +418,20 @@
 					type="submit"
 					class="w-full"
 				>
-					{selected_task?.id ? 'Update Task' : 'Add Task'}
+					{ updating ? 'Pushing Data..':(selected_task?.id ? 'Update Task' : 'Add Task')}
 				</Button>
+				{/if}
 				<Button color="alternative" class="w-full" on:click={() => dispatch('close')}>
+					
 					<CloseOutline />
 					Cancel
 				</Button>
 			</div>
 		</div>
-	</form>
+
+
 </Modal>
+
 
 <!-- <Modal bind:open={completeModalOpen || resetModalOpen} size="sm">
 	{#if completeModalOpen || resetModalOpen}
@@ -514,6 +538,12 @@
 			<Button color="alternative" on:click={() => (editPPIRFormOpen = false)}>Cancel</Button>
 		</div>
 	</form>
+</Modal>
+<Modal bind:open={viewForm} size="xl">
+	<object data={formView} width="100%" height="600px" title="form"></object>
+	<div class="flex items-center justify-center">
+		<Button color="alternative" on:click={() => (open = false)}>Close</Button>
+	</div>
 </Modal>
 
 {#if selected_task && selected_task.ppir_forms}

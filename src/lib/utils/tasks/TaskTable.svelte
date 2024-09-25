@@ -24,7 +24,7 @@
 	import { createEventDispatcher } from 'svelte';
 
 	const dispatch = createEventDispatcher();
-
+	export let isNational = false;
 	export let filteredTasks: any[];
 	export let selectedTasks: any[];
 	export let sortings: string[];
@@ -101,12 +101,15 @@
 						on:mouseleave={() => (isHovering = false)}
 						on:focusin={() => (isHovering = true)}
 						on:focusout={() => (isHovering = false)}
-					>
-						<Checkbox
-							on:click={selectAllTasks}
-							checked={selectedTasks.length === filteredTasks.length && filteredTasks.length > 0}
-							aria-describedby="selectAllTooltip"
-						/>
+					>	
+				{#if isNational}
+					<Checkbox
+						on:click={selectAllTasks}
+						checked={selectedTasks.length === filteredTasks.length && filteredTasks.length > 0}
+						aria-describedby="selectAllTooltip"
+					/>
+				{/if}	
+						
 						{#if isHovering}
 							<div
 								id="selectAllTooltip"
@@ -157,10 +160,13 @@
 					{#each paginatedTasks as task}
 						<TableBodyRow>
 							<TableBodyCell class="!p-4">
-								<Checkbox
-									on:click={() => selectTasks(task)}
-									checked={selectedTasks.includes(task)}
-								/>
+								{#if isNational}
+									<Checkbox
+										on:click={() => selectTasks(task)}
+										checked={selectedTasks.includes(task)}
+									/>
+								{/if}	
+								
 							</TableBodyCell>
 							<TableBodyCell>
 								{#if task.status === 'completed'}
@@ -200,9 +206,11 @@
 									<Button size="xs" on:click={() => openTaskModal(task)}>
 										<EditOutline size="xs" class="mr-1" /> Manage
 									</Button>
+									{#if isNational}
 									<Button color="red" size="xs" on:click={() => openDeleteModal(task)}>
 										<TrashBinSolid size="xs" class="mr-1" /> Delete
 									</Button>
+									{/if}
 								</div>
 							</TableBodyCell>
 						</TableBodyRow>
