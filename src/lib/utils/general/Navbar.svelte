@@ -29,11 +29,6 @@
 	let searchQuery = '';
 	let filteredRoutes = routes;
 
-	function handleSearch(event: Event) {
-		const target = event.target as HTMLInputElement;
-		searchQuery = target.value.toLowerCase();
-		filteredRoutes = routes.filter((route) => route.name.toLowerCase().includes(searchQuery));
-	}
 </script>
 
 <Navbar
@@ -89,11 +84,7 @@
 				</NavUl>
 			{:else}
 				<form>
-					<Search
-						size="md"
-						class="mt-1 w-96 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:focus:ring-indigo-400"
-						on:input={handleSearch}
-					/>
+					
 					{#if searchQuery}
 						<ul
 							class="absolute mt-2 max-h-60 w-96 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
