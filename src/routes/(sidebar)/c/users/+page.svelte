@@ -272,20 +272,23 @@
 						<option value="National_Admin">National Admin</option>
 					{/if}
 				</Select>
+
+				{#if loggedInUser && loggedInUser.role === 'National_Admin'}
 				<Select
 					placeholder="Filter by region"
 					class="me-4 w-80 border xl:w-96"
 					bind:value={selectedRegion}
 					on:change={filterUsers}
-					disabled={loggedInUser && loggedInUser.role !== 'National_Admin'}
 				>
 					<option value="">All Regions</option>
 					{#each regions as region}
 						<option value={region}>{formatRegionName(region)}</option>
 					{/each}
 				</Select>
-			</div>
+				{/if}
 
+			</div>
+			{#if loggedInUser && loggedInUser.role === 'National_Admin'}
 			<Button
 				size="sm"
 				class="flex items-center gap-2 whitespace-nowrap rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400"
@@ -293,6 +296,8 @@
 			>
 				<PlusOutline size="sm" />Add user
 			</Button>
+			{/if}
+
 		</div>
 
 		{#if isLoading}
@@ -330,6 +335,7 @@
 				users={paginatedUsers}
 				onEditUser={handleEditUser}
 				onDeleteUser={handleDeleteUser}
+				loggedInUserRole={loggedInUser?.role}
 			/>
 			<div class="mt-4 flex justify-between">
 				<Button color="blue" on:click={handlePreviousPage} disabled={currentPage === 1}>
