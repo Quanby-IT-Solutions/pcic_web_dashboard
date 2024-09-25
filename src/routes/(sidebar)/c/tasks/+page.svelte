@@ -1039,18 +1039,18 @@
 </main>
 
 <Task
-	bind:open={taskModalOpen}
+
 	{regions}
 	{formView}
 	{users}
 	{markAsComplete}
 	bind:selected_task
 	{upsertTask}
-	{deleteTask}
+
 	{isNational}
 	clearForm={clearPPICForm}
 	on:close={closeTaskModal}
-	{openSecondaryModal}
+
 />
 
 <Modal bind:open size={modalType == 'sync' ? 'md' : 'sm'}>
