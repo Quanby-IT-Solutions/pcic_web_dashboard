@@ -6,10 +6,11 @@
 	import mapboxgl from 'mapbox-gl';
 	import { supabase_content } from '../../../supabase';
 
+	// Props passed from the dashboard component
 	export let userId: string;
-	export let selectedMonth: number;  // New prop for selected month
-	export let selectedDay: number;    // New prop for selected day
-	export let selectedWeek: number;   // New prop for selected week
+	export let selectedMonth: number;
+	export let selectedDay: number;
+	export let selectedWeek: number;
 
 	// Interface for the user logs fetched from Supabase
 	interface SupabaseLog {
@@ -17,11 +18,20 @@
 		activity: string;
 		sync_status: string;
 		longlat: string | null;
+		task_id: string | null;
+	}
+
+	// Interface for tasks
+	interface Task {
+		id: string;
+		task_number: string;
 	}
 
 	// State variables
 	let userLogs: SupabaseLog[] = [];
-	let filteredLogs: SupabaseLog[] = [];  // Filtered logs based on month, day, week
+	let filteredLogs: SupabaseLog[] = [];
+	let tasks: Task[] = [];  // Store the list of tasks that match the user's logs
+	let selectedTaskId: string | null = null;  // To track the selected task from the dropdown
 	let isLoading = true;
 	let dataError: string | null = null;
 	let map: mapboxgl.Map | null = null;
@@ -30,15 +40,14 @@
 	const dispatch = createEventDispatcher();
 
 	// Mapbox access token
-	mapboxgl.accessToken =
-		'pk.eyJ1IjoicXVhbmJ5ZGV2cyIsImEiOiJjbHplNmtybm4wbHZsMmlva3pkbDY2bG1yIn0.I-82-7hu310FPXYvKTIMMQ';
+	mapboxgl.accessToken = 'pk.eyJ1IjoicXVhbmJ5ZGV2cyIsImEiOiJjbHplNmtybm4wbHZsMmlva3pkbDY2bG1yIn0.I-82-7hu310FPXYvKTIMMQ';
 
 	// Fetch user logs from Supabase
 	async function fetchUserLogs() {
 		try {
 			const { data, error } = await supabase_content
 				.from('user_logs')
-				.select('timestamp, activity, sync_status, longlat')
+				.select('timestamp, activity, sync_status, longlat, task_id')  // Fetch task_id
 				.eq('user_id', userId)
 				.order('timestamp', { ascending: false });
 
@@ -48,6 +57,8 @@
 				dataError = 'No timeline available for this user.';
 			} else {
 				userLogs = data;
+				// Fetch task information for the dropdown (only those in the user's logs)
+				await fetchTasksForUser();
 				filterLogs();  // Apply filter after fetching logs
 			}
 		} catch (error) {
@@ -58,7 +69,46 @@
 		}
 	}
 
-	// Function to filter logs based on selected month, day, and week
+	// Fetch tasks that are related to the task_ids in the user's logs based on the selected month, day, and week
+	async function fetchTasksForUser() {
+		// Filter the logs first to apply the month, day, and week filters
+		const filteredLogsForTasks = userLogs.filter((log) => {
+			const logDate = new Date(log.timestamp);
+			const logMonth = logDate.getMonth();  // 0-based month
+			const logDay = logDate.getDate();
+			const logWeek = Math.ceil(logDay / 7);  // Week calculation
+
+			return (
+				logMonth === selectedMonth &&
+				(selectedDay ? logDay === selectedDay : true) &&
+				(selectedWeek ? logWeek === selectedWeek : true)
+			);
+		});
+
+		// Get the distinct task_ids from the filtered logs
+		const taskIds = [...new Set(filteredLogsForTasks.map(log => log.task_id).filter(Boolean))];
+
+		if (taskIds.length === 0) {
+			tasks = [];
+			return;
+		}
+
+		try {
+			// Fetch task details for the task_ids found in user logs
+			const { data, error } = await supabase_content
+				.from('tasks')
+				.select('id, task_number')
+				.in('id', taskIds);  // Only fetch tasks that match the task_ids from the user logs
+
+			if (error) throw error;
+
+			tasks = data || [];
+		} catch (error) {
+			console.error('Error fetching tasks:', error);
+		}
+	}
+
+	// Filter logs based on selected task, month, day, and week
 	function filterLogs() {
 		filteredLogs = userLogs.filter((log) => {
 			const logDate = new Date(log.timestamp);
@@ -66,7 +116,9 @@
 			const logDay = logDate.getDate();
 			const logWeek = Math.ceil(logDay / 7);  // Week calculation
 
+			// Apply filters for selected task and date
 			return (
+				(selectedTaskId ? log.task_id === selectedTaskId : true) &&
 				logMonth === selectedMonth &&
 				(selectedDay ? logDay === selectedDay : true) &&
 				(selectedWeek ? logWeek === selectedWeek : true)
@@ -166,6 +218,22 @@
 			Back to Users
 		</button>
 		<h1 class="text-xl font-bold">User Timeline</h1>
+	</div>
+
+	<!-- Task Filter Dropdown -->
+	<div class="p-4">
+		<label for="taskFilter" class="block text-sm font-medium text-gray-700">Filter by Task Number</label>
+		<select
+			id="taskFilter"
+			bind:value={selectedTaskId}
+			class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+			on:change={filterLogs}  
+		>
+			<option value={null}>All Tasks</option>
+			{#each tasks as task}
+				<option value={task.id}>{task.task_number}</option>  <!-- Display task_number in dropdown -->
+			{/each}
+		</select>
 	</div>
 
 	{#if isLoading}
