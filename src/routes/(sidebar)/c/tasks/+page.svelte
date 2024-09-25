@@ -1047,6 +1047,7 @@
 	bind:selected_task
 	{upsertTask}
 	{deleteTask}
+	{isNational}
 	clearForm={clearPPICForm}
 	on:close={closeTaskModal}
 	{openSecondaryModal}
