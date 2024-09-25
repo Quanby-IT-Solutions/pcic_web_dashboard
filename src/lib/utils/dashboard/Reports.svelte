@@ -49,9 +49,10 @@
 	let dataError: string | null = null;
 	let showPagination = true;
 
-	let selectedMonth = new Date().getMonth();
-	let selectedDay = new Date().getDate();
-	let selectedWeek = getCurrentWeekNumber(new Date());
+	let selectedWeek: number;
+	let selectedMonth: number;
+	let selectedDay: number;
+
 
 	let monthOptions = Array.from({ length: 12 }, (_, i) => i);
 	let dayOptions = Array.from({ length: 31 }, (_, i) => i + 1);
@@ -81,7 +82,14 @@
 
 	let userSelectedHeaders = [...userActiveHeaders];
 
-	function getCurrentWeekNumber(date: Date) {
+	function initializeDateToToday() {
+		const today = new Date();
+		selectedMonth = today.getMonth();
+		selectedDay = today.getDate();
+		selectedWeek = getCurrentWeekNumber(today);
+		}
+
+		function getCurrentWeekNumber(date: Date) {
 		const start = new Date(date.getFullYear(), date.getMonth(), 1);
 		const diff =
 			date.getTime() -
@@ -89,44 +97,47 @@
 			(start.getTimezoneOffset() - date.getTimezoneOffset()) * 60000;
 		const oneWeek = 604800000;
 		return Math.floor(diff / oneWeek) + 1;
-	}
+		}
 
-	function getStartAndEndOfWeek(week: number, month: number, year: number) {
+		function getStartAndEndOfWeek(week: number, month: number, year: number) {
 		const start = new Date(year, month, (week - 1) * 7 + 1);
 		const end = new Date(year, month, (week - 1) * 7 + 7);
 		end.setHours(23, 59, 59, 999);
 		return { start, end };
-	}
+		}
 
-	function updateWeekOptions() {
+		function updateWeekOptions() {
 		const selectedDate = new Date(new Date().getFullYear(), selectedMonth, selectedDay);
 		selectedWeek = getCurrentWeekNumber(selectedDate);
 		const totalWeeksInMonth = getCurrentWeekNumber(
 			new Date(new Date().getFullYear(), selectedMonth + 1, 0)
 		);
 		weekOptions = Array.from({ length: totalWeeksInMonth }, (_, i) => i + 1);
-	}
+		}
 
-	async function fetchInspectors() {
+
+	async function fetchInspectors(startDate: Date, endDate: Date) {
 		isLoading = true;
 		try {
 			const [usersResponse, tasksResponse] = await Promise.all([
-				supabase
-					.from('users')
-					.select(
-						`
-                    id, 
-                    inspector_name, 
-                    mobile_number, 
-                    is_online, 
-                    email,
-                    regions (
-                        region_name
-                    )
-                `
-					)
-					.eq('role', 'Agent'),
-				supabase.from('tasks').select('id, assignee, status, created_at')
+			supabase
+				.from('users')
+				.select(`
+				id, 
+				inspector_name, 
+				mobile_number, 
+				is_online, 
+				email,
+				regions (
+					region_name
+				)
+				`)
+				.eq('role', 'Agent'),
+			supabase
+				.from('tasks')
+				.select('id, assignee, status, created_at')
+				.gte('created_at', startDate.toISOString())
+				.lte('created_at', endDate.toISOString())
 			]);
 
 			if (usersResponse.error) throw new Error(usersResponse.error.message);
@@ -135,68 +146,47 @@
 			const users = usersResponse.data;
 			const tasks = tasksResponse.data;
 
-			const today = new Date();
-			const { start: startOfWeek, end: endOfWeek } = getStartAndEndOfWeek(
-				selectedWeek,
-				selectedMonth,
-				today.getFullYear()
-			);
-
 			const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-			inspectors = users.map(
-				(user: {
-					id: any;
-					inspector_name: any;
-					mobile_number: any;
-					is_online: any;
-					email: any;
-					regions: { region_name: any };
-				}) => {
-					const userTasks = tasks.filter((task: { assignee: any }) => task.assignee === user.id);
-					const totalDispatch = userTasks.length;
-					const completed = userTasks.filter(
-						(task: { status: string }) => task.status === 'completed'
-					).length;
-					const backlogs = userTasks.filter(
-						(task: { status: string }) => task.status === 'ongoing'
-					).length;
+			inspectors = users.map((user: { id: any; inspector_name: any; mobile_number: any; is_online: any; email: any; regions: { region_name: any; }; }) => {
+			const userTasks = tasks.filter((task: { assignee: any; }) => task.assignee === user.id);
+			const totalDispatch = userTasks.length;
+			const completed = userTasks.filter((task: { status: string; }) => task.status === 'completed').length;
+			const backlogs = userTasks.filter((task: { status: string; }) => task.status === 'ongoing').length;
 
-					const tasksByDay = weekDays.map((day, index) => {
-						const dayStart = new Date(startOfWeek);
-						dayStart.setDate(startOfWeek.getDate() + index);
-						const dayEnd = new Date(dayStart);
-						dayEnd.setHours(23, 59, 59, 999);
+			const tasksByDay = weekDays.map((day, index) => {
+				const dayStart = new Date(startDate);
+				dayStart.setDate(startDate.getDate() + index);
+				const dayEnd = new Date(dayStart);
+				dayEnd.setHours(23, 59, 59, 999);
 
-						return userTasks.filter(
-							(task: { created_at: string | number | Date; status: string }) => {
-								const taskDate = new Date(task.created_at);
-								return taskDate >= dayStart && taskDate <= dayEnd && task.status === 'completed';
-							}
-						).length;
-					});
+				return userTasks.filter((task: { created_at: string | number | Date; status: string; }) => {
+				const taskDate = new Date(task.created_at);
+				return taskDate >= dayStart && taskDate <= dayEnd && task.status === 'completed';
+				}).length;
+			});
 
-					return {
-						id: user.id,
-						name: user.inspector_name,
-						mobile: user.mobile_number,
-						online: user.is_online,
-						...Object.fromEntries(weekDays.map((day, index) => [day, tasksByDay[index]])),
-						totalDispatch,
-						completed,
-						backlogs,
-						email: user.email,
-						region: user.regions?.region_name ?? 'N/A'
-					};
-				}
-			);
+			return {
+				id: user.id,
+				name: user.inspector_name,
+				mobile: user.mobile_number,
+				online: user.is_online,
+				...Object.fromEntries(weekDays.map((day, index) => [day, tasksByDay[index]])),
+				totalDispatch,
+				completed,
+				backlogs,
+				email: user.email,
+				region: user.regions?.region_name ?? 'N/A'
+			};
+			});
 		} catch (error) {
 			dataError = (error as Error).message;
 			console.error('Error:', error);
 		} finally {
 			isLoading = false;
 		}
-	}
+		}
+
 
 	function handleRowClick(userId: string) {
 		selectedUserId = userId;
@@ -212,25 +202,35 @@
 	function handleMonthChange(event: Event) {
 		selectedMonth = parseInt((event.target as HTMLSelectElement).value);
 		updateWeekOptions();
-		fetchInspectors();
-	}
+		const { start: startOfWeek, end: endOfWeek } = getStartAndEndOfWeek(
+			selectedWeek,
+			selectedMonth,
+			new Date().getFullYear()
+		);
+		fetchInspectors(startOfWeek, endOfWeek);
+		}
 
 	function handleDayChange(event: Event) {
 		selectedDay = parseInt((event.target as HTMLSelectElement).value);
 		updateWeekOptions();
-		fetchInspectors();
-	}
+		const { start: startOfWeek, end: endOfWeek } = getStartAndEndOfWeek(
+			selectedWeek,
+			selectedMonth,
+			new Date().getFullYear()
+		);
+		fetchInspectors(startOfWeek, endOfWeek);
+		}
 
 	function handleWeekChange(event: Event) {
 		selectedWeek = parseInt((event.target as HTMLSelectElement).value);
-		const { start: startOfWeek } = getStartAndEndOfWeek(
+		const { start: startOfWeek, end: endOfWeek } = getStartAndEndOfWeek(
 			selectedWeek,
 			selectedMonth,
 			new Date().getFullYear()
 		);
 		selectedDay = startOfWeek.getDate();
-		fetchInspectors();
-	}
+		fetchInspectors(startOfWeek, endOfWeek);
+		}
 
 	function toggleHeader(header: string) {
 		if (['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].includes(header)) {
@@ -426,12 +426,18 @@
 		XLSX.writeFile(workbook, `inspectors_report_${dayToday}.xlsx`);
 	};
 
-	onMount(() => {
+			onMount(() => {
 		if (browser) {
-			fetchInspectors();
+			initializeDateToToday();
+			const { start: startOfWeek, end: endOfWeek } = getStartAndEndOfWeek(
+			selectedWeek,
+			selectedMonth,
+			new Date().getFullYear()
+			);
+			fetchInspectors(startOfWeek, endOfWeek);
+			updateWeekOptions();
 		}
-		updateWeekOptions();
-	});
+		});
 
 	const headers = [
 		'Mobile Number',
