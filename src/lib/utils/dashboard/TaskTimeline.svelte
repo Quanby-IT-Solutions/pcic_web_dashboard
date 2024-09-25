@@ -135,6 +135,7 @@
 	});
 </script>
 
+
 <!-- UI Structure -->
 <div class="flex h-screen w-full flex-col">
 	<div class="flex items-center justify-between p-4">
@@ -142,11 +143,13 @@
 			class="flex items-center text-blue-400 transition-colors duration-300 hover:text-blue-300"
 			on:click={goBack}
 		>
+
 			<ArrowLeft size={24} class="mr-2" />
 			Back to Users
 		</button>
 		<h1 class="text-xl font-bold">User Timeline</h1>
 	</div>
+
 
 	{#if isLoading}
 		<!-- Loading Spinner -->
@@ -179,6 +182,7 @@
 									minute: '2-digit',
 									hour12: true
 								})}
+
 							</span>
 							{#if log.longlat}
 								<button
@@ -188,6 +192,7 @@
 									<User size={16} />
 								</button>
 							{/if}
+
 						</div>
 						<h3 class="mb-1 text-lg font-semibold">{log.activity}</h3>
 						<p class="text-sm text-gray-400">{log.sync_status}</p>
@@ -198,11 +203,13 @@
 				{/each}
 			</div>
 
+
 			<!-- Map Container -->
 			<div id="map" class="h-full w-1/2"></div>
 		</div>
 	{/if}
 </div>
+
 
 <style>
 	:global(body) {
