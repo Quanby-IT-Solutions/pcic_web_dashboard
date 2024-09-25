@@ -504,7 +504,13 @@
 
 <main class="relative flex min-h-screen flex-col">
 	{#if showActivity && selectedUserId}
-		<TaskTimeline userId={selectedUserId} on:back={goBack} />
+    <TaskTimeline 
+      userId={selectedUserId} 
+      selectedMonth={selectedMonth} 
+      selectedDay={selectedDay} 
+      selectedWeek={selectedWeek} 
+      on:back={goBack} 
+    />
 	{:else}
 		<div class="flex-grow p-4">
 			<div class="mb-4 flex items-center justify-between">

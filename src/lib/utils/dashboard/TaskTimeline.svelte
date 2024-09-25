@@ -6,7 +6,10 @@
 	import mapboxgl from 'mapbox-gl';
 	import { supabase_content } from '../../../supabase';
 
-	export let userId: string; // Ensure this prop is provided
+	export let userId: string;
+	export let selectedMonth: number;  // New prop for selected month
+	export let selectedDay: number;    // New prop for selected day
+	export let selectedWeek: number;   // New prop for selected week
 
 	// Interface for the user logs fetched from Supabase
 	interface SupabaseLog {
@@ -18,6 +21,7 @@
 
 	// State variables
 	let userLogs: SupabaseLog[] = [];
+	let filteredLogs: SupabaseLog[] = [];  // Filtered logs based on month, day, week
 	let isLoading = true;
 	let dataError: string | null = null;
 	let map: mapboxgl.Map | null = null;
@@ -44,6 +48,7 @@
 				dataError = 'No timeline available for this user.';
 			} else {
 				userLogs = data;
+				filterLogs();  // Apply filter after fetching logs
 			}
 		} catch (error) {
 			dataError = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -53,20 +58,35 @@
 		}
 	}
 
+	// Function to filter logs based on selected month, day, and week
+	function filterLogs() {
+		filteredLogs = userLogs.filter((log) => {
+			const logDate = new Date(log.timestamp);
+			const logMonth = logDate.getMonth();  // 0-based month
+			const logDay = logDate.getDate();
+			const logWeek = Math.ceil(logDay / 7);  // Week calculation
+
+			return (
+				logMonth === selectedMonth &&
+				(selectedDay ? logDay === selectedDay : true) &&
+				(selectedWeek ? logWeek === selectedWeek : true)
+			);
+		});
+	}
+
 	// Initialize the map
 	function initializeMap() {
 		const mapStyle = getMapStyle();
 
-		if (userLogs.length > 0 && userLogs[0].longlat) {
-			const [lng, lat] = userLogs[0].longlat.split(',').map(Number); // Swapped order
+		if (filteredLogs.length > 0 && filteredLogs[0].longlat) {
+			const [lng, lat] = filteredLogs[0].longlat.split(',').map(Number);
 
-			// Validate coordinates before using them
+			// Validate coordinates
 			if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
 				console.error('Invalid latitude or longitude values:', { lat, lng });
 				return;
 			}
 
-			
 			map = new mapboxgl.Map({
 				container: 'map',
 				style: mapStyle,
@@ -74,7 +94,7 @@
 				zoom: 12
 			});
 
-			updateMapLocation(userLogs[0].longlat);
+			updateMapLocation(filteredLogs[0].longlat);
 		}
 	}
 
@@ -88,7 +108,7 @@
 	function updateMapLocation(longlat: string | null) {
 		if (!map || !longlat) return;
 
-		const [lng, lat] = longlat.split(',').map(Number); // Swapped order
+		const [lng, lat] = longlat.split(',').map(Number);
 
 		// Validate coordinates
 		if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
@@ -128,13 +148,12 @@
 	// Fetch user logs and initialize the map on mount
 	onMount(() => {
 		fetchUserLogs().then(() => {
-			if (userLogs.length > 0) {
+			if (filteredLogs.length > 0) {
 				initializeMap();
 			}
 		});
 	});
 </script>
-
 
 <!-- UI Structure -->
 <div class="flex h-screen w-full flex-col">
@@ -143,34 +162,31 @@
 			class="flex items-center text-blue-400 transition-colors duration-300 hover:text-blue-300"
 			on:click={goBack}
 		>
-
 			<ArrowLeft size={24} class="mr-2" />
 			Back to Users
 		</button>
 		<h1 class="text-xl font-bold">User Timeline</h1>
 	</div>
 
-
 	{#if isLoading}
 		<!-- Loading Spinner -->
 		<div class="flex flex-grow items-center justify-center">
 			<img src={spinner} alt="Loading..." class="h-16 w-16" />
 		</div>
-	{:else if dataError || userLogs.length === 0}
+	{:else if dataError || filteredLogs.length === 0}
 		<!-- Error or No Data Message -->
 		<div class="flex flex-grow flex-col items-center justify-center p-8 text-center">
 			<AlertCircle size={48} class="mb-4 text-yellow-400" />
 			<h2 class="mb-2 text-2xl font-bold">No Timeline Data Available</h2>
 			<p class="max-w-md text-gray-400">
-				We couldn't find any timeline data for this user. This could be because the user hasn't
-				performed any logged activities yet.
+				{dataError ? dataError : "No logs available for this user with the current filter."}
 			</p>
 		</div>
 	{:else}
 		<!-- User Logs and Map -->
 		<div class="flex flex-grow overflow-hidden">
 			<div class="custom-scrollbar w-1/2 overflow-y-auto p-4">
-				{#each userLogs as log}
+				{#each filteredLogs as log}
 					<div class="mb-4 rounded-lg p-4 shadow transition-all duration-300 hover:bg-gray-700">
 						<div class="mb-2 flex items-start justify-between">
 							<span class="text-sm text-gray-400">
@@ -182,7 +198,6 @@
 									minute: '2-digit',
 									hour12: true
 								})}
-
 							</span>
 							{#if log.longlat}
 								<button
@@ -192,7 +207,6 @@
 									<User size={16} />
 								</button>
 							{/if}
-
 						</div>
 						<h3 class="mb-1 text-lg font-semibold">{log.activity}</h3>
 						<p class="text-sm text-gray-400">{log.sync_status}</p>
@@ -203,13 +217,11 @@
 				{/each}
 			</div>
 
-
 			<!-- Map Container -->
 			<div id="map" class="h-full w-1/2"></div>
 		</div>
 	{/if}
 </div>
-
 
 <style>
 	:global(body) {
