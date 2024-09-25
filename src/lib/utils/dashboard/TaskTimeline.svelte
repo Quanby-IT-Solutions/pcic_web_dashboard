@@ -66,6 +66,7 @@
 				return;
 			}
 
+			
 			map = new mapboxgl.Map({
 				container: 'map',
 				style: mapStyle,
