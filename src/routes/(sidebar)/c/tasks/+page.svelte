@@ -1,47 +1,24 @@
-<!-- src/routes/(sidebar)/crud/tasks/+page.svelte -->
+<!-- src\routes\(sidebar)\crud\tasks\+page.svelte -->
 <script lang="ts">
-	import {
-		Breadcrumb,
-		BreadcrumbItem,
-		Button,
-		Checkbox,
-		Drawer,
-		Heading,
-		Input,
-		Label,
-		Table,
-		TableBody,
-		TableBodyCell,
-		TableBodyRow,
-		TableHead,
-		TableHeadCell,
-		Toolbar,
-		ToolbarButton
-	} from 'flowbite-svelte';
-	import {
-		ArrowDownOutline,
-		ArrowsRepeatOutline,
-		ArrowUpDownOutline,
-		ArrowUpOutline,
-		PrinterSolid,
-		CogSolid,
-		DotsVerticalOutline,
-		EditOutline,
-		ExclamationCircleSolid,
-		TrashBinSolid
-	} from 'flowbite-svelte-icons';
-	import { onMount, type ComponentType } from 'svelte';
+	import { Modal, Heading, Button } from 'flowbite-svelte';
 	import { sineIn } from 'svelte/easing';
-	import MetaTag from '../../../utils/MetaTag.svelte';
-	import Delete from './Delete.svelte';
-	import Task from './Task.svelte';
-	import Toast from '../../../utils/widgets/Toast.svelte';
-	import { Modal } from 'flowbite-svelte';
-	import Pagination from '../../../utils/dashboard/Pagination.svelte';
+	import { onMount } from 'svelte';
+	import { QuestionCircleOutline, ExclamationCircleOutline, ExclamationCircleSolid } from 'flowbite-svelte-icons';
+
+	import spinner from '$lib/assets/pcic-spinner.gif';
 	import jsPDF from 'jspdf';
 	import Papa from 'papaparse';
-	
 
+	import Task from '$lib/utils/tasks/Task.svelte';
+	import Delete from '$lib/utils/tasks/Delete.svelte';
+	import Toast from '$lib/utils/widgets/Toast.svelte';
+	import MetaTag from '$lib/utils/general/MetaTag.svelte';
+	import TaskToolbar from '$lib/utils/tasks/TaskToolbar.svelte';
+	import TaskTable from '$lib/utils/tasks/TaskTable.svelte';
+	import SyncModal from '$lib/utils/tasks/SyncModal.svelte';
+	import ConfirmationModal from '$lib/utils/tasks/ConfirmationModal.svelte';
+
+	
 	let isSyncing = false;
 
 	let hidden: boolean = true; // modal control
@@ -1662,31 +1639,3 @@
 
 <Toast {...toastProps} />
 
-<!-- 
-
-unused code
-
-<ToolbarButton
-color="dark"
-class="m-0 rounded p-1 hover:bg-gray-100 focus:ring-0 dark:hover:bg-gray-700"
->
-<CogSolid size="lg" />
-</ToolbarButton>
-<ToolbarButton
-color="dark"
-class="m-0 rounded p-1 hover:bg-gray-100 focus:ring-0 dark:hover:bg-gray-700"
->
-<TrashBinSolid size="lg" />
-</ToolbarButton>
-<ToolbarButton
-color="dark"
-class="m-0 rounded p-1 hover:bg-gray-100 focus:ring-0 dark:hover:bg-gray-700"
->
-<ExclamationCircleSolid size="lg" />
-</ToolbarButton>
-<ToolbarButton
-color="dark"
-class="m-0 rounded p-1 hover:bg-gray-100 focus:ring-0 dark:hover:bg-gray-700"
->
-<DotsVerticalOutline size="lg" />
-</ToolbarButton> -->
