@@ -199,183 +199,182 @@
 	}
 </script>
 
-<Modal bind:open size="lg" class="my-8">
-	<div class="mx-auto my-6 max-w-3xl">
-		<Heading tag="h1" class="mb-6 text-center text-lg font-semibold uppercase">
-			{selected_task && selected_task.id ? 'Update Task' : 'Add New Task'}
-		</Heading>
-		<form on:submit|preventDefault={handleSubmit} class="space-y-6">
-			<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+<Modal bind:open size="xl">
+	<Heading tag="h1" class="mb-6 text-lg font-semibold uppercase">
+		{selected_task && selected_task.id ? 'Update Task' : 'Add New Task'}
+	</Heading>
+	<form on:submit|preventDefault={handleSubmit}>
+		<div class="space-y-4">
+			<Label class="space-y-2">
+				<span>Name</span>
+				<Input
+					name="title"
+					class="border font-normal outline-none"
+					placeholder="Type task name"
+					value={task_name}
+					on:change={handleTaskNameChange}
+					required
+				/>
+			</Label>
+
+			<Label class="space-y-2">
+				<span>Service Group</span>
+				<Select
+					disabled={regions.length == 1}
+					class="border-gray-300 font-normal outline-none"
+					bind:value={service_group}
+					required
+				>
+					<option value={null} selected>Select Type</option>
+					{#if regions.length == 1}
+						{#each regions as region}
+							<option selected value={region.region_code}>{region.region_code}</option>
+						{/each}
+					{:else}
+						{#each regions as region}
+							{#if service_group == region.region_code}
+								<option selected value={region.region_code}>{region.region_code}</option>
+							{:else}
+								<option value={region.region_code}>{region.region_code}</option>
+							{/if}
+						{/each}
+					{/if}
+				</Select>
+			</Label>
+
+			<Label class="space-y-2">
+				<span>Service Type</span>
+				<Input
+					name="group"
+					class="border font-normal outline-none"
+					readonly
+					placeholder="None"
+					value={service_group ? getTypeFromPO(service_group) : ''}
+					required
+				/>
+			</Label>
+			<Label class="space-y-2">
+				<span>Priority</span>
+				<Select
+					class="border-gray-300 font-normal outline-none"
+					on:change={handlePrioChange}
+					required
+				>
+					<option value={null} selected>Set Priority</option>
+					{#each ['Low', 'Medium', 'High'] as prio}
+						{#if priority == prio}
+							<option selected value={prio}>{prio}</option>
+						{:else}
+							<option value={prio}>{prio}</option>
+						{/if}
+					{/each}
+				</Select>
+			</Label>
+
+			<Label class="space-y-2">
+				<span>Assignee</span>
+				<div class="relative w-full">
+					<Button
+						class="flex w-full items-center justify-between rounded-lg border border-gray-300 bg-gray-50 p-3 text-gray-700 outline-none hover:bg-gray-100 focus:ring-2 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:ring-2 dark:focus:ring-green-500"
+						on:click={() => (searchModalOpen = !searchModalOpen)}
+					>
+						<span>{selected_user ? selected_user.inspector_name : 'Select Assignee'}</span>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							class="h-5 w-5 text-gray-500 dark:text-gray-400"
+							viewBox="0 0 20 20"
+							fill="currentColor"
+						>
+							<path
+								fill-rule="evenodd"
+								d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4 4a.75.75 0 01-1.06 0l-4-4a.75.75 0 01.02-1.06z"
+								clip-rule="evenodd"
+							/>
+						</svg>
+					</Button>
+
+					<!-- Dropdown menu -->
+					{#if searchModalOpen}
+						<div
+							class="absolute z-10 mt-2 w-full rounded-lg border border-gray-300 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
+						>
+							<div class="p-2">
+								<Input
+									name="userSearch"
+									class="mb-2 w-full border border-gray-300 bg-white font-normal text-gray-700 placeholder-gray-400 outline-none focus:ring-2 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:placeholder-gray-500 dark:focus:ring-2 dark:focus:ring-green-500"
+									placeholder="Search users..."
+									on:input={filterUsers}
+								/>
+							</div>
+							<div class="max-h-48 overflow-y-auto">
+								{#each filteredUsers as user}
+									<button
+										type="button"
+										class="w-full cursor-pointer p-2 text-left text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+										on:click={() => handleUserSelect(user)}
+									>
+										{user.inspector_name}
+									</button>
+								{/each}
+							</div>
+						</div>
+					{/if}
+				</div>
+			</Label>
+
+			{#each ppir_form_initial_columns as ppir_col}
 				<Label class="space-y-2">
-					<span>Name</span>
+					<span>{ppir_col.replaceAll('_', ' ')}</span>
 					<Input
 						name="title"
 						class="border font-normal outline-none"
-						placeholder="Type task name"
-						value={task_name}
-						on:change={handleTaskNameChange}
-						required
+						placeholder="Type {ppir_col.replaceAll('_', ' ')}"
+						bind:value={ppir_form[ppir_col]}
 					/>
 				</Label>
-
-				<Label class="space-y-2">
-					<span>Service Group</span>
-					<Select
-						disabled={regions.length == 1}
-						class="border-gray-300 font-normal outline-none"
-						bind:value={service_group}
-						required
-					>
-						<option value={null} selected>Select Type</option>
-						{#if regions.length == 1}
-							{#each regions as region}
-								<option selected value={region.region_code}>{region.region_code}</option>
-							{/each}
-						{:else}
-							{#each regions as region}
-								<option value={region.region_code} selected={service_group == region.region_code}
-									>{region.region_code}</option
-								>
-							{/each}
-						{/if}
-					</Select>
-				</Label>
-
-				<Label class="space-y-2">
-					<span>Service Type</span>
-					<Input
-						name="group"
-						class="border font-normal outline-none"
-						readonly
-						placeholder="None"
-						value={service_group ? getTypeFromPO(service_group) : ''}
-						required
-					/>
-				</Label>
-
-				<Label class="space-y-2">
-					<span>Priority</span>
-					<Select
-						class="border-gray-300 font-normal outline-none"
-						on:change={handlePrioChange}
-						required
-					>
-						<option value={null} selected>Set Priority</option>
-						{#each ['Low', 'Medium', 'High'] as prio}
-							<option value={prio} selected={priority == prio}>{prio}</option>
-						{/each}
-					</Select>
-				</Label>
-
-				<div class="md:col-span-2">
-					<Label class="space-y-2">
-						<span>Assignee</span>
-						<div class="relative w-full">
-							<Button
-								class="flex w-full items-center justify-between rounded-lg border border-gray-300 bg-gray-50 p-3 text-gray-700 outline-none hover:bg-gray-100 focus:ring-2 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:ring-2 dark:focus:ring-green-500"
-								on:click={() => (searchModalOpen = !searchModalOpen)}
-							>
-								<span>{selected_user ? selected_user.inspector_name : 'Select Assignee'}</span>
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									class="h-5 w-5 text-gray-500 dark:text-gray-400"
-									viewBox="0 0 20 20"
-									fill="currentColor"
-								>
-									<path
-										fill-rule="evenodd"
-										d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4 4a.75.75 0 01-1.06 0l-4-4a.75.75 0 01.02-1.06z"
-										clip-rule="evenodd"
-									/>
-								</svg>
-							</Button>
-
-							{#if searchModalOpen}
-								<div
-									class="absolute z-10 mt-2 w-full rounded-lg border border-gray-300 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
-								>
-									<div class="p-2">
-										<Input
-											name="userSearch"
-											class="mb-2 w-full border border-gray-300 bg-white font-normal text-gray-700 placeholder-gray-400 outline-none focus:ring-2 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:placeholder-gray-500 dark:focus:ring-2 dark:focus:ring-green-500"
-											placeholder="Search users..."
-											on:input={filterUsers}
-										/>
-									</div>
-									<div class="max-h-48 overflow-y-auto">
-										{#each filteredUsers as user}
-											<button
-												type="button"
-												class="w-full cursor-pointer p-2 text-left text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-												on:click={() => handleUserSelect(user)}
-											>
-												{user.inspector_name}
-											</button>
-										{/each}
-									</div>
-								</div>
-							{/if}
-						</div>
-					</Label>
-				</div>
-			</div>
-
-			<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-				{#each ppir_form_initial_columns as ppir_col}
-					<Label class="space-y-2">
-						<span>{ppir_col.replaceAll('_', ' ')}</span>
-						<Input
-							name="title"
-							class="border font-normal outline-none"
-							placeholder="Type {ppir_col.replaceAll('_', ' ')}"
-							bind:value={ppir_form[ppir_col]}
-						/>
-					</Label>
-				{/each}
-			</div>
+			{/each}
 
 			{#if selected_task}
-				<div class="space-y-4">
-					<Label class="space-y-2">
-						<span>PPIR Form</span>
-						<div class="grid grid-cols-1 gap-2 md:grid-cols-3">
-							<Button
-								color="green"
-								on:click={() => {
-									open = true;
-									viewForm = true;
-								}}
-								class="w-full">View Form</Button
-							>
-							<Button color="blue" on:click={openEditPPIRForm} class="w-full">Edit PPIR Form</Button
-							>
-							<Button on:click={() => openSecondaryModal('reset')} color="red" class="w-full">
-								Clear Form
-							</Button>
-						</div>
-					</Label>
+				<Label class="space-y-2">
+					<span>PPIR Form</span>
+					<Button
+						color="green"
+						on:click={() => {
+							open = true;
+							viewForm = true;
+						}}
+						class="mb-2 w-full">View Form</Button
+					>
+					<Button color="blue" on:click={openEditPPIRForm} class="mb-2 w-full"
+						>Edit PPIR Form</Button
+					>
+					<Button on:click={() => openSecondaryModal('reset')} color="red" class="mb-2 w-full">
+						Clear Form
+					</Button>
+				</Label>
 
-					<Label class="space-y-2">
-						<span>Status</span>
-						<Button
-							on:click={() => {
-								if (selected_task.status !== 'completed') {
-									openSecondaryModal('complete');
-								}
-							}}
-							color={selected_task.status === 'completed' ? 'green' : 'blue'}
-							class="w-full"
-						>
-							{selected_task.status === 'completed' ? 'Completed' : 'Mark as Complete'}
-						</Button>
-					</Label>
-				</div>
+				<!-- {#if selected_task.status != 'completed'} -->
+				<Label class="space-y-2">
+					<span>Status</span>
+					<Button
+						on:click={() => {
+							if (selected_task.status !== 'completed') {
+								openSecondaryModal('complete');
+							}
+						}}
+						color={selected_task.status === 'completed' ? 'green' : 'blue'}
+						class="mb-2 w-full"
+					>
+						{selected_task.status === 'completed' ? 'Completed' : 'Mark as Complete'}
+					</Button>
+				</Label>
 			{/if}
 
-			<div class="flex justify-center space-x-4 pt-4">
+			<div class="flex w-full justify-center space-x-4 pb-4">
 				<Button
 					on:click={async () => {
 						if (task_name.trim() === '') {
+							// Show an error message or handle empty task name
 							return;
 						}
 						const success = await upsertTask(
@@ -397,17 +396,17 @@
 						}
 					}}
 					type="submit"
-					class="w-full md:w-auto"
+					class="w-full"
 				>
 					{selected_task?.id ? 'Update Task' : 'Add Task'}
 				</Button>
-				<Button color="alternative" class="w-full md:w-auto" on:click={() => dispatch('close')}>
+				<Button color="alternative" class="w-full" on:click={() => dispatch('close')}>
 					<CloseOutline />
 					Cancel
 				</Button>
 			</div>
-		</form>
-	</div>
+		</div>
+	</form>
 </Modal>
 
 <!-- <Modal bind:open={completeModalOpen || resetModalOpen} size="sm">
