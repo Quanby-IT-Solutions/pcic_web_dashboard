@@ -337,20 +337,23 @@
 			</Label>
 
 			{#each ppir_form_initial_columns as ppir_col}
-				<Label class="space-y-2">
-					<span>{ppir_col.replaceAll('_', ' ')}</span>
-					<Input
-						disabled={!isNational || (ppir_col != 'ppir_insuranceid' && ppir_col != 'ppir_assignmentid') || selected_task && selected_task.id }
-						name="title"
-						class="border font-normal outline-none"
-						placeholder="Type {ppir_col.replaceAll('_', ' ')}"
-						value={ppir_form[ppir_col]}
-						on:change={(event)=>{handlePPIRFormChange(event,ppir_col)}}
-					/>
-				</Label>
+				{#if !(ppir_col != 'ppir_insuranceid' && ppir_col != 'ppir_assignmentid')  || !(selected_task && selected_task.id  == null)}
+					<Label class="space-y-2">
+						<span>{ppir_col.replaceAll('_', ' ')}</span>
+						<Input
+							disabled={!isNational || (ppir_col != 'ppir_insuranceid' && ppir_col != 'ppir_assignmentid') || selected_task && selected_task.id }
+							name="title"
+							class="border font-normal outline-none"
+							placeholder="Type {ppir_col.replaceAll('_', ' ')}"
+							value={ppir_form[ppir_col]}
+							on:change={(event)=>{handlePPIRFormChange(event,ppir_col)}}
+						/>
+					</Label>
+				{/if}
+				
 			{/each}
 
-			{#if selected_task}
+			{#if selected_task && selected_task.id}
 				<Label class="space-y-2">
 					<span>PPIR Form</span>
 					<Button
