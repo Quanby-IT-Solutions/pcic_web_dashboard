@@ -312,8 +312,11 @@
 				.from('ppir_forms')
 				.select('ppir_insuranceid')
 				.eq('ppir_insuranceid', row['ppir_insuranceid']);
-
-			if (existingRow) {
+			if(selectError){
+				showToast(`Error adding task to database.`, 'error');
+				return false;
+			}
+			if (existingRow?.length) {
 				showToast(`PPIR Insurance ID already exists`, 'error');
 				return false;
 			}
