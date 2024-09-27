@@ -72,6 +72,7 @@
 		"flowbite": "^2.5.1",
 		"flowbite-svelte": "^0.46.16",
 		"flowbite-svelte-icons": "^1.6.1",
+		"ftp-ts": "^1.1.0",
 		"jspdf": "^2.5.1",
 		"jspdf-autotable": "^3.8.3",
 		"lottie-web": "^5.12.2",
