@@ -1,5 +1,4 @@
 <script lang="ts">
-	// Same script code as before
 	import spinner from '$lib/assets/pcic-spinner.gif';
 	import { onMount, createEventDispatcher } from 'svelte';
 	import { User, AlertCircle, ArrowLeft } from 'lucide-svelte';
@@ -165,17 +164,14 @@
 		});
 	}
 
-	window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-		if (map) {
-			const newStyle = e.matches
-				? 'mapbox://styles/mapbox/dark-v10'
-				: 'mapbox://styles/mapbox/light-v10';
-			map.setStyle(newStyle);
-		}
-	});
-
 	function goBack() {
 		dispatch('back');
+	}
+
+	function handleTaskChange(event: Event) {
+		const select = event.target as HTMLSelectElement;
+		selectedTaskId = select.value === 'all' ? null : select.value;
+		filterLogs();
 	}
 
 	onMount(() => {
@@ -184,10 +180,18 @@
 				initializeMap();
 			}
 		});
+
+		window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+			if (map) {
+				const newStyle = e.matches
+					? 'mapbox://styles/mapbox/dark-v10'
+					: 'mapbox://styles/mapbox/light-v10';
+				map.setStyle(newStyle);
+			}
+		});
 	});
 </script>
 
-<!-- UI Structure -->
 <div class="flex h-screen w-full flex-col">
 	<div class="flex items-center justify-between p-4">
 		<button
@@ -200,29 +204,26 @@
 		<h1 class="text-xl font-bold">User Timeline</h1>
 	</div>
 
-	<!-- Task Filter Dropdown -->
+	<!-- Native Dropdown for Task Filter -->
 	<div class="p-4">
-		<label for="taskFilter" class="block text-sm font-medium text-gray-700">Filter by Task Number</label>
+		<label for="taskFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filter by Task</label>
 		<select
 			id="taskFilter"
-			bind:value={selectedTaskId}
-			class="dropdown-transparent mt-1 block w-full pl-3 pr-10 py-3 text-base border-2 border-blue-500 bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-300 sm:text-sm rounded-md"
-			on:change={filterLogs} 
+			class="w-full px-3 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+			on:change={handleTaskChange}
 		>
-			<option value={null}>All Tasks</option>
+			<option value="all">All Tasks</option>
 			{#each tasks as task}
-				<option value={task.id}>{task.task_number}</option>  <!-- Display task_number in dropdown -->
+				<option value={task.id}>{task.task_number}</option>
 			{/each}
 		</select>
 	</div>
 
 	{#if isLoading}
-		<!-- Loading Spinner -->
 		<div class="flex flex-grow items-center justify-center">
 			<img src={spinner} alt="Loading..." class="h-16 w-16" />
 		</div>
 	{:else if dataError || filteredLogs.length === 0}
-		<!-- Error or No Data Message -->
 		<div class="flex flex-grow flex-col items-center justify-center p-8 text-center">
 			<AlertCircle size={48} class="mb-4 text-yellow-400" />
 			<h2 class="mb-2 text-2xl font-bold">No Timeline Data Available</h2>
@@ -231,7 +232,6 @@
 			</p>
 		</div>
 	{:else}
-		<!-- User Logs and Map -->
 		<div class="flex flex-grow overflow-hidden">
 			<div class="custom-scrollbar w-1/2 overflow-y-auto p-4">
 				{#each filteredLogs as log}
@@ -265,7 +265,6 @@
 				{/each}
 			</div>
 
-			<!-- Map Container -->
 			<div id="map" class="h-full w-1/2"></div>
 		</div>
 	{/if}
@@ -295,17 +294,5 @@
 	.custom-scrollbar::-webkit-scrollbar-thumb {
 		background-color: #4a5568;
 		border-radius: 4px;
-	}
-
-	/* Transparent dropdown */
-	.dropdown-transparent {
-		background-color: transparent;
-		border: none;
-		color: inherit;
-	}
-
-	.dropdown-transparent option {
-		background-color: transparent;
-		color: inherit;
 	}
 </style>
