@@ -1144,13 +1144,13 @@
 	{:else}
 		<object data={formView} width="100%" height="600px" title="form"></object>
 		<div class="flex items-center justify-center">
-			<Button
+			<!-- <Button
 				color="alternative"
 				on:click={() => {
 					completeModalOpen = false;
 					resetModalOpen = false;
 				}}>Close</Button
-			>
+			> -->
 		</div>
 	{/if}
 </Modal>
