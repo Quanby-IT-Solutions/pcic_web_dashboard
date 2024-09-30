@@ -315,7 +315,6 @@
 				showToast(`PPIR Insurance ID already exists`, 'error');
 				return false;
 			}
-			alert(JSON.stringify(selectError));
 		}
 
 		const invalidData = Object.keys(upsertData).find(

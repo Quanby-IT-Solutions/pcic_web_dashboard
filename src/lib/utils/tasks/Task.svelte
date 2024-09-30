@@ -273,7 +273,7 @@
 					on:change={handlePrioChange}
 					
 				>
-					<option value={null} selected>Set Priority</option>
+					<option value={'Normal Priority'} selected>Normal Priority</option>
 					{#each ['Low', 'Medium', 'High'] as prio}
 						{#if priority == prio}
 							<option selected value={prio}>{prio}</option>
