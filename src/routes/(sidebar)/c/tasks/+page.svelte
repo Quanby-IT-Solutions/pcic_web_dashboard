@@ -1079,6 +1079,7 @@
 	bind:open={taskModalOpen}
 	{regions}
 	{formView}
+	{showToast}
 	{users}
 	{markAsComplete}
 	{isNational}

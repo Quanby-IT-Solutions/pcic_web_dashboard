@@ -27,8 +27,9 @@
 	export let markAsComplete: (taskId: string) => Promise<boolean>;
 	export let clearForm: (taskId: string) => Promise<void>;
 	export let deleteTask: (id: string) => Promise<void>;
+	export let showToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
 
-	let filteredUsers: any[] = [...users];
+	let filteredUsers: any[] = users;
 	let task_name: string;
 	let service_group: string;
 	let priority: string;
@@ -82,7 +83,9 @@
 	];
 
 	onMount(() => {
-		console.log(formView);
+		// console.log(formView);
+		// alert(JSON.stringify(regions[0]));
+		searchModalOpen = false;
 	});
 
 	$: ({ markAsComplete, clearForm, deleteTask });
@@ -94,10 +97,12 @@
 		status = selected_task.status || 'for dispatch';
 		priority = selected_task.priority || '';
 		ppir_form = selected_task.ppir_forms || {};
+		searchModalOpen = false;
 	}
 
 	let editPPIRFormOpen = false;
 
+	
 	const openEditPPIRForm = () => {
 		editPPIRFormOpen = true;
 	};
@@ -170,6 +175,9 @@
 
 	const getTypeFromPO = (PO: string) => {
 		return `${regions.find((region) => region.region_code == PO)?.region_name} PPIR`;
+	};
+	const getIDFromPO = (PO: string) => {
+		return regions.find((region) => region.region_code == PO)?.id;
 	};
 
 	function isFormValid() {
@@ -290,7 +298,16 @@
 					<Button
 						disabled={!isNational}
 						class="flex w-full items-center justify-between rounded-lg border border-gray-300 bg-gray-50 p-3 text-gray-700 outline-none hover:bg-gray-100 focus:ring-2 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:ring-2 dark:focus:ring-green-500"
-						on:click={() => (searchModalOpen = !searchModalOpen)}
+						on:click={() =>{
+							
+							if(service_group == ''){
+								showToast('Please select a service group.', 'error')
+								return;
+							}else{
+								 (searchModalOpen = !searchModalOpen)
+								 filteredUsers = users;
+							}
+						}}
 					>
 						<span>{selected_user ? selected_user.inspector_name : 'Select Assignee'}</span>
 						<svg
@@ -317,11 +334,12 @@
 									name="userSearch"
 									class="mb-2 w-full border border-gray-300 bg-white font-normal text-gray-700 placeholder-gray-400 outline-none focus:ring-2 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:placeholder-gray-500 dark:focus:ring-2 dark:focus:ring-green-500"
 									placeholder="Search users..."
-									on:input={filterUsers}
+									on:keyup={filterUsers}
 								/>
 							</div>
 							<div class="max-h-48 overflow-y-auto">
 								{#each filteredUsers as user}
+									{#if user.region_id == getIDFromPO(service_group)} 
 									<button
 										type="button"
 										class="w-full cursor-pointer p-2 text-left text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
@@ -329,6 +347,7 @@
 									>
 										{user.inspector_name}
 									</button>
+									{/if}
 								{/each}
 							</div>
 						</div>
@@ -424,7 +443,9 @@
 					{ updating ? 'Pushing Data..':(selected_task?.id ? 'Update Task' : 'Add Task')}
 				</Button>
 				{/if}
-				<Button color="alternative" class="w-full" on:click={() => dispatch('close')}>
+				<Button color="alternative" class="w-full" on:click={() => {
+					 dispatch('close')
+				}}>
 					
 					<CloseOutline />
 					Cancel
