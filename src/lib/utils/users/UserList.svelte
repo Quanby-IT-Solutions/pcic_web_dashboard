@@ -73,13 +73,16 @@
                             </div>
                         </TableBodyCell>
                         <TableBodyCell class="w-1/12 p-4 text-center align-middle">
-                            <div class="flex items-center justify-center">
+                            <div class="flex items-center justify-center space-x-2">
                                 <div
-                                    class="h-2.5 w-2.5 rounded-full bg-${getStatusColor(user.is_online)}-500 mr-2"
+                                    class={`h-2.5 w-2.5 rounded-full ${
+                                        user.is_online ? 'bg-green-500' : 'bg-gray-500'
+                                    }`}
                                 ></div>
-                                {getStatusText(user.is_online)}
+                                <span>{getStatusText(user.is_online)}</span>
                             </div>
                         </TableBodyCell>
+                        
                         <TableBodyCell class="w-2/12 p-4 text-center align-middle">
                             {new Date(user.created_at).toLocaleDateString()}
                         </TableBodyCell>

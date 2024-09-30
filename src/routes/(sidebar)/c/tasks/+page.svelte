@@ -312,8 +312,11 @@
 				.from('ppir_forms')
 				.select('ppir_insuranceid')
 				.eq('ppir_insuranceid', row['ppir_insuranceid']);
-
-			if (existingRow) {
+			if(selectError){
+				showToast(`Error adding task to database.`, 'error');
+				return false;
+			}
+			if (existingRow?.length) {
 				showToast(`PPIR Insurance ID already exists`, 'error');
 				return false;
 			}
@@ -1159,13 +1162,13 @@
 	{:else}
 		<object data={formView} width="100%" height="600px" title="form"></object>
 		<div class="flex items-center justify-center">
-			<Button
+			<!-- <Button
 				color="alternative"
 				on:click={() => {
 					completeModalOpen = false;
 					resetModalOpen = false;
 				}}>Close</Button
-			>
+			> -->
 		</div>
 	{/if}
 </Modal>
