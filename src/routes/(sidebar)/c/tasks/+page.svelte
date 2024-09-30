@@ -10,7 +10,6 @@
 	import Papa from 'papaparse';
 
 	import Task from '$lib/utils/tasks/Task.svelte';
-	import Delete from '$lib/utils/tasks/Delete.svelte';
 	import Toast from '$lib/utils/widgets/Toast.svelte';
 	import MetaTag from '$lib/utils/general/MetaTag.svelte';
 	import TaskToolbar from '$lib/utils/tasks/TaskToolbar.svelte';
@@ -18,41 +17,50 @@
 	import SyncModal from '$lib/utils/tasks/SyncModal.svelte';
 	import ConfirmationModal from '$lib/utils/tasks/ConfirmationModal.svelte';
 
-	let isSyncing = false;
-	let isScanning = false;
-	let taskModalOpen: boolean = false;
-	let deleteModalOpen: boolean = false;
-	let secondaryModalOpen = false;
-	let open: boolean = false;
-	let modalType: string = 'clear_forms';
-
 	const path: string = '/c/tasks';
-	const description: string = 'CRUD productsPCIC Web Dashboard';
+	const description: string = 'PCIC Web Dashboard';
 	const title: string = 'PCIC Web Dashboard';
-	const subtitle: string = 'CRUD Products';
+	const subtitle: string = 'PCIC Web Dashboard';
 	let transitionParams = {
 		x: 320,
 		duration: 200,
 		easing: sineIn
 	};
 
-	let isLoading = true;
-
 	export let data;
 
 	let formView = '';
+	let search: string = '';
+	let confirm_delete: string = '';
+	let statusFilter: string = 'all';
+	let modalType: string = 'clear_forms';
+
+	let isSyncing = false;
+	let isScanning = false;
+	let taskModalOpen: boolean = false;
+	let deleteModalOpen: boolean = false;
+	let secondaryModalOpen = false;
+	let open: boolean = false;
+	let isLoading = true;
+	let completeModalOpen = false;
+	let resetModalOpen = false;
+	let isNational = false;
+	let isBulkActionLoading = false;
 
 	let users: any[] = [];
 	let tasks: any[] = [];
 	let current_user: any = {};
 	let selected_task: any = {};
-	let statusFilter: string = 'all';
-	let search: string = '';
-	let confirm_delete: string = '';
-	let completeModalOpen = false;
-	let resetModalOpen = false;
+
 	let filteredTasks: any[] = [];
 	let sortings: any[] = [];
+	let currentPage = 1;
+	let selectedTasks: any[] = [];
+	let regions: any[];
+	let scannedFiles: any = {};
+
+	let currentlySyncing: any = null;
+
 	let toastProps: {
 		show: boolean;
 		message: string;
@@ -62,19 +70,6 @@
 		message: '',
 		type: 'success'
 	};
-
-	let maxPageItems = 10;
-	let currentPage = 1;
-
-	let selectedTasks: any[] = [];
-
-	let isNational = false;
-
-	let currentlySyncing: any = null;
-
-	let scannedFiles: any = {};
-
-	let regions: any[];
 
 	$: ({ supabase } = data);
 
@@ -312,7 +307,7 @@
 				.from('ppir_forms')
 				.select('ppir_insuranceid')
 				.eq('ppir_insuranceid', row['ppir_insuranceid']);
-			if(selectError){
+			if (selectError) {
 				showToast(`Error adding task to database.`, 'error');
 				return false;
 			}
@@ -320,6 +315,7 @@
 				showToast(`PPIR Insurance ID already exists`, 'error');
 				return false;
 			}
+			alert(JSON.stringify(selectError));
 		}
 
 		const invalidData = Object.keys(upsertData).find(
@@ -878,40 +874,47 @@
 			return;
 		}
 
+		isBulkActionLoading = true;
+
 		let successCount = 0;
 		let failureCount = 0;
 
-		for (const task of selectedTasks) {
-			try {
-				if (modalType === 'clear_forms') {
-					await clearPPICForm(task.id);
-					showToast(`Successfully cleared form of ${task.task_number}`, 'success');
+		try {
+			for (const task of selectedTasks) {
+				try {
+					if (modalType === 'clear_forms') {
+						await clearPPICForm(task.id);
+					} else {
+						await deleteTask(task.id);
+					}
+					tasks = tasks.filter((t) => t.id !== task.id);
+					filteredTasks = filteredTasks.filter((t) => t.id !== task.id);
 					successCount++;
-				} else {
-					await deleteTask(task.id);
-					showToast(`Successfully deleted task ${task.task_number}`, 'success');
-					successCount++;
+				} catch (error) {
+					failureCount++;
+					console.error(`Error processing task ${task.task_number}:`, error);
 				}
-			} catch (error) {
-				console.error(`Error processing task ${task.task_number}:`, error);
-				showToast(`Failed to process ${task.task_number}: ${error}`, 'error');
-				failureCount++;
 			}
-		}
 
-		const action = modalType === 'clear_forms' ? 'cleared' : 'deleted';
-		if (failureCount > 0) {
-			showToast(
-				`Operation completed with errors. ${successCount} tasks ${action}, ${failureCount} failed.`,
-				'warning'
-			);
-		} else {
-			showToast(`Successfully ${action} ${successCount} tasks!`, 'success');
+			const action = modalType === 'clear_forms' ? 'cleared' : 'deleted';
+			if (failureCount > 0) {
+				showToast(
+					`Operation completed. ${successCount} tasks ${action}, ${failureCount} failed.`,
+					'warning'
+				);
+			} else {
+				showToast(`Successfully ${action} ${successCount} tasks!`, 'success');
+			}
+		} catch (error) {
+			console.error('Bulk action failed:', error);
+			showToast('An error occurred during the bulk action', 'error');
+		} finally {
+			isBulkActionLoading = false;
+			open = false;
+			selectedTasks = [];
+			confirm_delete = '';
+			sortFilterTasks();
 		}
-
-		selectedTasks = [];
-		confirm_delete = '';
-		await fetchTasks();
 	}
 
 	type TaskTableEvent =
@@ -1006,9 +1009,9 @@
 		deleteModalOpen = true;
 	}
 
-	function handleDeleteConfirm() {
+	async function handleDeleteConfirm() {
 		if (selected_task) {
-			deleteTask(selected_task.id);
+			await deleteTask(selected_task.id);
 			deleteModalOpen = false;
 			selected_task = null;
 		}
@@ -1088,7 +1091,7 @@
 	{openSecondaryModal}
 />
 
-<Modal bind:open size={modalType == 'sync' ? 'md' : 'sm'}>
+<Modal bind:open size={modalType == 'sync' ? 'md' : 'sm'} autoclose={!isBulkActionLoading}>
 	{#if modalType == 'sync'}
 		<SyncModal
 			{isScanning}
@@ -1104,6 +1107,7 @@
 			{handleBulkAction}
 			{handleConfirmDelete}
 			closeModal={() => (open = false)}
+			{isBulkActionLoading}
 		/>
 	{/if}
 </Modal>
