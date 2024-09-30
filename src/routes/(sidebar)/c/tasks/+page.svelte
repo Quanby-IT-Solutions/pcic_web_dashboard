@@ -664,189 +664,207 @@
 					showToast(`Syncing file: ${file}`, 'info');
 					currentlySyncing = file;
 
-					const { data: existingFile, error: fileCheckError } = await supabase
-						.from('file_read')
-						.select('*')
-						.eq('file_name', file)
-						.single();
-
-					if (fileCheckError && fileCheckError.code !== 'PGRST116') {
-						console.error(`Error checking existence of file ${file}:`, fileCheckError);
-						continue;
-					}
-
-					let fileReadId;
-					if (existingFile) {
-						fileReadId = existingFile.id;
-					} else {
-						const { data: fileReadData, error: fileReadError } = await supabase
+					try {
+						const { data: existingFile, error: fileCheckError } = await supabase
 							.from('file_read')
-							.insert([{ file_name: file, file_type: 'csv' }])
-							.select('id')
+							.select('*')
+							.eq('file_name', file)
 							.single();
 
-						if (fileReadError) {
-							console.error(`Error inserting data into file_read for ${file}:`, fileReadError);
+						if (fileCheckError && fileCheckError.code !== 'PGRST116') {
+							console.error(`Error checking existence of file ${file}:`, fileCheckError);
 							continue;
 						}
-						fileReadId = fileReadData.id;
-					}
 
-					for (const row of scannedFiles[file].rows) {
-						try {
-							const assigneeEmail = row['Assignee'];
-							let assigneeId;
-							const { data: existingUser, error: userSelectError } = await supabase
-								.from('users')
-								.select('*')
-								.eq('email', assigneeEmail)
+						let fileReadId;
+						if (existingFile) {
+							fileReadId = existingFile.id;
+						} else {
+							const { data: fileReadData, error: fileReadError } = await supabase
+								.from('file_read')
+								.insert([{ file_name: file, file_type: 'csv' }])
+								.select('id')
 								.single();
 
-							if (userSelectError && userSelectError.code !== 'PGRST116') {
-								console.error(
-									`Error checking existence of user ${assigneeEmail}:`,
-									userSelectError
-								);
-								showToast('System Error: Error checking existence new user', 'error');
+							if (fileReadError) {
+								console.error(`Error inserting data into file_read for ${file}:`, fileReadError);
 								continue;
 							}
+							fileReadId = fileReadData.id;
+						}
 
-							if (existingUser) {
-								assigneeId = existingUser.id;
-							} else {
-								const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-									email: assigneeEmail,
-									password: '1'
-								});
-
-								if (!authData.user) {
-									console.error(`Error creating new user for ${assigneeEmail}`);
-									showToast('System Error: Error creating new user', 'error');
-									continue;
-								}
-
-								assigneeId = authData.user.id;
-							}
-
-							const ppirInsuranceId = row['ppir_insuranceid'];
-							const { data: existingRow, error: selectError } = await supabase
-								.from('ppir_forms')
-								.select('ppir_insuranceid')
-								.eq('ppir_insuranceid', ppirInsuranceId)
-								.single();
-
-							if (selectError && selectError.code !== 'PGRST116') {
-								console.error(
-									`Error checking existence of ${ppirInsuranceId} in ppir_forms:`,
-									selectError
-								);
-								showToast('System Error: Error checking existence of ppir_form', 'error');
-								continue;
-							}
-
-							if (!existingRow) {
-								const { data: taskData, error: taskError } = await supabase
-									.from('tasks')
-									.insert([
-										{
-											task_number: `Task-${row['ppir_assignmentid']}`,
-											service_type: row['Service Type'],
-											service_group: row['Service Group'].replace('0', 'O'),
-											priority: row['Priority'],
-											assignee: assigneeId,
-											file_id: fileReadId
-										}
-									])
-									.select('id')
+						for (const row of scannedFiles[file].rows) {
+							try {
+								const assigneeEmail = row['Assignee'];
+								let assigneeId;
+								const { data: existingUser, error: userSelectError } = await supabase
+									.from('users')
+									.select('*')
+									.eq('email', assigneeEmail)
 									.single();
 
-								if (taskError) {
+								if (userSelectError && userSelectError.code !== 'PGRST116') {
 									console.error(
-										`Error inserting data into tasks for ${ppirInsuranceId}:`,
-										taskError
+										`Error checking existence of user ${assigneeEmail}:`,
+										userSelectError
 									);
-									showToast(`Error inserting data into tasks for ${ppirInsuranceId}:`, 'error');
+									showToast('System Error: Error checking existence new user', 'error');
 									continue;
 								}
 
-								const { error: ppirFormError } = await supabase.from('ppir_forms').insert([
-									{
-										task_id: taskData.id,
-										ppir_assignmentid: `PPIR-${row['ppir_assignmentid']}`,
-										ppir_insuranceid: row['ppir_insuranceid'],
-										ppir_farmername: row['ppir_farmername'],
-										ppir_address: row['ppir_address'],
-										ppir_farmertype: row['ppir_farmertype'],
-										ppir_mobileno: row['ppir_mobileno'],
-										ppir_groupname: row['ppir_groupname'],
-										ppir_groupaddress: row['ppir_groupaddress'],
-										ppir_lendername: row['ppir_lendername'],
-										ppir_lenderaddress: row['ppir_lenderaddress'],
-										ppir_cicno: row['ppir_cicno'],
-										ppir_farmloc: row['ppir_farmloc'],
-										ppir_north: row['ppir_north'],
-										ppir_south: row['ppir_south'],
-										ppir_east: row['ppir_east'],
-										ppir_west: row['ppir_west'],
-										ppir_att_1: row['ppir_att_1'],
-										ppir_att_2: row['ppir_att_2'],
-										ppir_att_3: row['ppir_att_3'],
-										ppir_att_4: row['ppir_att_4'],
-										ppir_area_aci: row['ppir_area_aci'],
-										ppir_area_act: row['ppir_area_act'],
-										ppir_dopds_aci: row['ppir_dopds_aci'],
-										ppir_dopds_act: row['ppir_dopds_act'],
-										ppir_doptp_aci: row['ppir_doptp_aci'],
-										ppir_doptp_act: row['ppir_doptp_act'],
-										ppir_svp_aci: row['ppir_svp_aci'],
-										ppir_svp_act:
-											row['ppir_svp_act'] == '' || !row['ppir_svp_act']
-												? 'rice'
-												: row['ppir_svp_act'],
-										ppir_variety: row['ppir_variety'],
-										ppir_stagecrop: row['ppir_stagecrop'],
-										ppir_remarks: row['ppir_remarks'],
-										ppir_name_insured: row['ppir_name_insured'],
-										ppir_name_iuia: row['ppir_name_iuia'],
-										ppir_sig_insured: row['ppir_sig_insured'],
-										ppir_sig_iuia: row['ppir_sig_iuia']
+								if (existingUser) {
+									assigneeId = existingUser.id;
+								} else {
+									const { data: authData, error: authError } = await supabase.auth.admin.createUser(
+										{
+											email: assigneeEmail,
+											password: '1'
+										}
+									);
+
+									if (!authData.user) {
+										console.error(`Error creating new user for ${assigneeEmail}`);
+										showToast('System Error: Error creating new user', 'error');
+										continue;
 									}
-								]);
 
-								if (ppirFormError) {
-									showToast('Error inserting data into ppir_forms', 'error');
+									assigneeId = authData.user.id;
+								}
+
+								const ppirInsuranceId = row['ppir_insuranceid'];
+								const { data: existingRow, error: selectError } = await supabase
+									.from('ppir_forms')
+									.select('ppir_insuranceid')
+									.eq('ppir_insuranceid', ppirInsuranceId)
+									.single();
+
+								if (selectError && selectError.code !== 'PGRST116') {
 									console.error(
-										`Error inserting data into ppir_forms for ${ppirInsuranceId}:`,
-										ppirFormError
+										`Error checking existence of ${ppirInsuranceId} in ppir_forms:`,
+										selectError
 									);
+									showToast('System Error: Error checking existence of ppir_form', 'error');
 									continue;
 								}
 
-								showToast(
-									`Data for ${ppirInsuranceId} successfully inserted into both ppir_forms and tasks.`,
-									'success'
-								);
-								totalSynced++;
-								scannedFiles[file].rows = scannedFiles[file].rows.filter(
-									(_row: any) => _row.ppir_insuranceid != row.ppir_insuranceid
-								);
-								scannedFiles[file].synced.push(row);
+								if (!existingRow) {
+									const { data: taskData, error: taskError } = await supabase
+										.from('tasks')
+										.insert([
+											{
+												task_number: `Task-${row['ppir_assignmentid']}`,
+												service_type: row['Service Type'],
+												service_group: row['Service Group'].replace('0', 'O'),
+												priority: row['Priority'],
+												assignee: assigneeId,
+												file_id: fileReadId
+											}
+										])
+										.select('id')
+										.single();
+
+									if (taskError) {
+										console.error(
+											`Error inserting data into tasks for ${ppirInsuranceId}:`,
+											taskError
+										);
+										showToast(`Error inserting data into tasks for ${ppirInsuranceId}:`, 'error');
+										continue;
+									}
+
+									const { error: ppirFormError } = await supabase.from('ppir_forms').insert([
+										{
+											task_id: taskData.id,
+											ppir_assignmentid: `PPIR-${row['ppir_assignmentid']}`,
+											ppir_insuranceid: row['ppir_insuranceid'],
+											ppir_farmername: row['ppir_farmername'],
+											ppir_address: row['ppir_address'],
+											ppir_farmertype: row['ppir_farmertype'],
+											ppir_mobileno: row['ppir_mobileno'],
+											ppir_groupname: row['ppir_groupname'],
+											ppir_groupaddress: row['ppir_groupaddress'],
+											ppir_lendername: row['ppir_lendername'],
+											ppir_lenderaddress: row['ppir_lenderaddress'],
+											ppir_cicno: row['ppir_cicno'],
+											ppir_farmloc: row['ppir_farmloc'],
+											ppir_north: row['ppir_north'],
+											ppir_south: row['ppir_south'],
+											ppir_east: row['ppir_east'],
+											ppir_west: row['ppir_west'],
+											ppir_att_1: row['ppir_att_1'],
+											ppir_att_2: row['ppir_att_2'],
+											ppir_att_3: row['ppir_att_3'],
+											ppir_att_4: row['ppir_att_4'],
+											ppir_area_aci: row['ppir_area_aci'],
+											ppir_area_act: row['ppir_area_act'],
+											ppir_dopds_aci: row['ppir_dopds_aci'],
+											ppir_dopds_act: row['ppir_dopds_act'],
+											ppir_doptp_aci: row['ppir_doptp_aci'],
+											ppir_doptp_act: row['ppir_doptp_act'],
+											ppir_svp_aci: row['ppir_svp_aci'],
+											ppir_svp_act:
+												row['ppir_svp_act'] == '' || !row['ppir_svp_act']
+													? 'rice'
+													: row['ppir_svp_act'],
+											ppir_variety: row['ppir_variety'],
+											ppir_stagecrop: row['ppir_stagecrop'],
+											ppir_remarks: row['ppir_remarks'],
+											ppir_name_insured: row['ppir_name_insured'],
+											ppir_name_iuia: row['ppir_name_iuia'],
+											ppir_sig_insured: row['ppir_sig_insured'],
+											ppir_sig_iuia: row['ppir_sig_iuia']
+										}
+									]);
+
+									if (ppirFormError) {
+										showToast('Error inserting data into ppir_forms', 'error');
+										console.error(
+											`Error inserting data into ppir_forms for ${ppirInsuranceId}:`,
+											ppirFormError
+										);
+										continue;
+									}
+
+									showToast(
+										`Data for ${ppirInsuranceId} successfully inserted into both ppir_forms and tasks.`,
+										'success'
+									);
+									totalSynced++;
+									scannedFiles[file].rows = scannedFiles[file].rows.filter(
+										(_row: any) => _row.ppir_insuranceid != row.ppir_insuranceid
+									);
+									scannedFiles[file].synced.push(row);
+								} else {
+									console.log(
+										`Row with ppir_insuranceid ${ppirInsuranceId} already exists in ppir_forms. Skipping insertion.`
+									);
+								}
+							} catch (rowError) {
+								console.error(`Error processing row in file ${file}:`, rowError);
+								showToast(`Error processing row: ${rowError}`, 'error');
+								totalErrors++;
 							}
-						} catch (error) {
-							const rowError = error as Error; // Type assertion
-							console.error(`Error processing row in file ${file}:`, rowError);
-							showToast(`Error processing row: ${rowError.message}`, 'error');
-							totalErrors++;
 						}
+					} catch (fileError) {
+						console.error(`Error syncing file ${file}:`, fileError);
+						showToast(`Error syncing file: ${file}`, 'error');
+						totalErrors++;
 					}
 				}
 			}
 
-			// ... rest of the function ...
+			if (totalErrors > 0) {
+				showToast(
+					`Sync completed with errors. ${totalSynced} rows synced, ${totalErrors} errors occurred.`,
+					'warning'
+				);
+			} else {
+				showToast(`Sync completed successfully! ${totalSynced} rows synced.`, 'success');
+			}
 		} catch (error) {
-			const syncError = error as Error; // Type assertion
-			console.error('Sync failed:', syncError.message);
-			showToast(`Sync failed: ${syncError.message}`, 'error');
+			const message = error instanceof Error ? error.message : 'An unknown error occurred';
+			console.error('Sync failed:', message);
+			showToast(`Sync failed: ${message}`, 'error');
 		} finally {
 			isSyncing = false;
 			currentlySyncing = null;
@@ -1143,13 +1161,13 @@
 	{:else}
 		<object data={formView} width="100%" height="600px" title="form"></object>
 		<div class="flex items-center justify-center">
-			<Button
+			<!-- <Button
 				color="alternative"
 				on:click={() => {
 					completeModalOpen = false;
 					resetModalOpen = false;
 				}}>Close</Button
-			>
+			> -->
 		</div>
 	{/if}
 </Modal>
