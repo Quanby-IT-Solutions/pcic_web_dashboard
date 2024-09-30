@@ -34,13 +34,13 @@
 
 	export let selectedRegionId: string | null = null;
 	export let current_user: any = null;
-	let selectedRole = '';
+	let selectedRole = 'Agent';
 
 	$: {
-		if (current_user) {
+		if (current_user != null) {
 			selectedRole = current_user.role;
 		} else {
-			selectedRole = '';
+			selectedRole = 'Agent';
 		}
 	}
 
@@ -429,7 +429,7 @@
 						<Select
 							name="role"
 							class="mt-2"
-							bind:value={selectedRole}
+							value={selectedRole}
 							on:change={handleRoleChange}
 							required
 						>
