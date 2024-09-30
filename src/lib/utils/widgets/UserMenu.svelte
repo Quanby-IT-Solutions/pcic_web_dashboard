@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { Avatar, Dropdown, DropdownHeader, DropdownItem } from 'flowbite-svelte';
+	import { goto } from '$app/navigation';
 
 	export let name: string = ''; // "sample sample",
 	export let avatar: string = ''; // "sample-sample.png",
@@ -10,8 +11,11 @@
 	$: ({ supabase } = data);
 
 	onMount(async () => {
-		const userId = (await supabase.auth.getUser()).data.user.id;
-		console.log(userId);
+		const userId = (await supabase.auth.getUser()).data.user?.id;
+		if(userId == null){
+			goto('/authentication/sign-in')
+		}
+		
 		const { data, error } = await supabase
 			.from('users')
 			.select(
