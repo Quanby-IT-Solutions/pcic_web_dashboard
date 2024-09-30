@@ -6,6 +6,8 @@
 	export let handleBulkAction: () => void;
 	export let handleConfirmDelete: (event: any) => void;
 	export let closeModal: () => void;
+
+	let deleting = false;
 </script>
 
 <ExclamationCircleSolid class="mx-auto mb-4 mt-8 h-10 w-10 text-red-600" />
@@ -30,6 +32,11 @@
 {/if}
 
 <div class="flex items-center justify-center">
-	<Button color="red" class="mr-2" on:click={handleBulkAction}>Yes, I'm sure</Button>
+	<Button disabled={deleting} color="red" class="mr-2" on:click={ async ()=>{
+		deleting = true;
+		await handleBulkAction();
+		deleting = false;
+		closeModal();
+	}}>{deleting ? "Deleting tasks...":"Yes, I'm sure"}</Button>
 	<Button color="alternative" on:click={closeModal}>No, cancel</Button>
 </div>
