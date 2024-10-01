@@ -632,6 +632,7 @@
 						processedFiles++;
 						showToast(`Processed ${processedFiles} of ${totalFiles} files`, 'info');
 					} catch (fileError) {
+						scannedFiles[file.name]['scanning']=false;
 						console.error(`Error processing file ${file.name}:`, fileError);
 						showToast(`Error processing file: ${file.name}`, 'error');
 					}
@@ -641,7 +642,7 @@
 		} catch (error) {
 			const message = error instanceof Error ? error.message : 'An unknown error occurred';
 			console.error('Scan failed:', message);
-			showToast(`Scan failed: ${message}`, 'error');
+			showToast(`Scan failed: ${message}. Try again.`, 'error');
 		} finally {
 			isScanning = false;
 		}
@@ -1091,15 +1092,15 @@
 	{openSecondaryModal}
 />
 
-<Modal bind:open size={modalType == 'sync' ? 'md' : 'sm'} autoclose={!isBulkActionLoading}>
+<Modal bind:open size={modalType == 'sync' ? 'md' : 'sm'} >
 	{#if modalType == 'sync'}
 		<SyncModal
 			{isScanning}
 			{isSyncing}
 			{scannedFiles}
 			{currentlySyncing}
-			on:syncWithFTP={syncWithFTP}
-			on:scanFTP={scanFTP}
+			{syncWithFTP}
+			{scanFTP}
 		/>
 	{:else}
 		<ConfirmationModal

@@ -3,20 +3,21 @@
 	import { ArrowsRepeatOutline } from 'flowbite-svelte-icons';
 	import { createEventDispatcher } from 'svelte';
 
-	const dispatch = createEventDispatcher();
+	// const dispatch = createEventDispatcher();
 
 	export let isScanning: boolean;
 	export let isSyncing: boolean;
 	export let scannedFiles: any;
 	export let currentlySyncing: string | null;
+	export let syncWithFTP : () => Promise<void>;
+	export let scanFTP : () => Promise<void>;
+	// function syncWithFTP() {
+	// 	dispatch('syncWithFTP');
+	// }
 
-	function syncWithFTP() {
-		dispatch('syncWithFTP');
-	}
-
-	function scanFTP() {
-		dispatch('scanFTP');
-	}
+	// function scanFTP() {
+	// 	dispatch('scanFTP');
+	// }
 </script>
 
 <div class="mx-auto mb-4 mt-8 flex h-14 w-14 items-center justify-center rounded-full bg-green-500">

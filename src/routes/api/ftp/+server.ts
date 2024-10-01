@@ -10,6 +10,13 @@ const FTP_CONFIG = {
 	password: env.FTP_PASSWORD
 };
 
+const FTP_CONFIG_2 = {
+	host: env.FTP_HOST_2,
+	port: parseInt(env.FTP_PORT),
+	user: env.FTP_USER,
+	password: env.FTP_PASSWORD
+};
+
 export async function POST({ request }) {
 	const client = new Client();
 	client.ftp.verbose = true;
