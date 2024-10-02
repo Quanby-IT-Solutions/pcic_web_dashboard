@@ -153,6 +153,8 @@
 			throw error;
 		}
 	}
+	
+
 
 	async function handleSubmit(event: Event) {
 		event.preventDefault();
@@ -185,34 +187,36 @@
 		}
 
 		try {
-			// Check if email or mobile number already exists
-			let existingUserQuery = supabase
-				.from('users')
-				.select('id, email, mobile_number')
-				.or(`email.eq.${userData.email},mobile_number.eq.${userData.mobile_number}`);
+			if(current_user == null){
+				// Check if email or mobile number already exists
+				let existingUserQuery = supabase
+					.from('users')
+					.select('id, email, mobile_number')
+					.or(`email.eq.${userData.email},mobile_number.eq.${userData.mobile_number}`);
 
-			// If editing, exclude the current user's record
-			if (current_user) {
-				existingUserQuery = existingUserQuery.neq('id', current_user.id);
-			}
-
-			const { data: existingUser, error: existingUserError } = await existingUserQuery.single();
-
-			if (existingUserError && existingUserError.code !== 'PGRST116') {
-				throw existingUserError;
-			}
-
-			// Show a specific alert if the email or number already exists
-			if (existingUser) {
-				if (existingUser.email === userData.email) {
-					showAlertMessage('The email is already taken. Please try a different one.', 'error');
-				} else if (existingUser.mobile_number === userData.mobile_number) {
-					showAlertMessage(
-						'The mobile number is already taken. Please try a different one.',
-						'error'
-					);
+				// If editing, exclude the current user's record
+				if (current_user) {
+					existingUserQuery = existingUserQuery.neq('id', current_user.id);
 				}
-				return;
+
+				const { data: existingUser, error: existingUserError } = await existingUserQuery.single();
+
+				if (existingUserError && existingUserError.code !== 'PGRST116') {
+					throw existingUserError;
+				}
+
+				// Show a specific alert if the email or number already exists
+				if (existingUser) {
+					if (existingUser.email === userData.email) {
+						showAlertMessage('The email is already taken. Please try a different one.', 'error');
+					} else if (existingUser.mobile_number === userData.mobile_number) {
+						showAlertMessage(
+							'The mobile number is already taken. Please try a different one.',
+							'error'
+						);
+					}
+					return;
+				}
 			}
 
 			let userDataToInsert;
@@ -232,7 +236,8 @@
 
 				const { data: authData, error: authError } = await supabase.auth.admin.createUser({
 					email: userData.email,
-					password: userData.password
+					password: userData.password,
+					email_confirm: true
 				});
 				if (authError) {
 					console.error('Error creating auth user:', authError);
@@ -249,6 +254,24 @@
 					photo_url: photo_url
 				};
 			} else {
+				if(userData.password.trim() != ''){
+					const { data: authData, error: authError } = await supabase.auth.admin.updateUserById(current_user.id,{
+					password: userData.password,
+					});
+					if (authError) {
+						console.error('Error updating auth user:', authError);
+						showAlertMessage(authError, 'error');
+						throw authError;
+					}
+				}
+				const { data: authData, error: authError } = await supabase.auth.admin.updateUserById(current_user.id,{
+					email: userData.email,
+				});
+				if (authError) {
+					console.error('Error updating auth user:', authError);
+					showAlertMessage(authError, 'error');
+					throw authError;
+				}
 				let photo_url = current_user.photo_url;
 				if (photoFile) {
 					try {
@@ -297,7 +320,10 @@
 				dispatch('userUpdated', userInsertData);
 			}
 		} catch (error) {
-			handleError(error);
+			// handleError(error);
+			showAlertMessage(String(error),'error')
+			// open = false;
+
 		}
 	}
 
@@ -315,6 +341,7 @@
 		console.error('Error creating user:', error);
 		errorMessage = 'Failed to create user. Please try again later.';
 		hasError = true;
+		
 	}
 
 	function handleFileInput(event: Event) {
