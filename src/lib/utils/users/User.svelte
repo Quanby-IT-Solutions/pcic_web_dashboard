@@ -187,37 +187,37 @@
 		}
 
 		try {
-			if(current_user == null){
-				// Check if email or mobile number already exists
-				let existingUserQuery = supabase
-					.from('users')
-					.select('id, email, mobile_number')
-					.or(`email.eq.${userData.email},mobile_number.eq.${userData.mobile_number}`);
+		
+			// Check if email or mobile number already exists
+			let existingUserQuery = supabase
+				.from('users')
+				.select('id, email, mobile_number')
+				.or(`email.eq.${userData.email},mobile_number.eq.${userData.mobile_number}`);
 
-				// If editing, exclude the current user's record
-				if (current_user) {
-					existingUserQuery = existingUserQuery.neq('id', current_user.id);
-				}
-
-				const { data: existingUser, error: existingUserError } = await existingUserQuery.single();
-
-				if (existingUserError && existingUserError.code !== 'PGRST116') {
-					throw existingUserError;
-				}
-
-				// Show a specific alert if the email or number already exists
-				if (existingUser) {
-					if (existingUser.email === userData.email) {
-						showAlertMessage('The email is already taken. Please try a different one.', 'error');
-					} else if (existingUser.mobile_number === userData.mobile_number) {
-						showAlertMessage(
-							'The mobile number is already taken. Please try a different one.',
-							'error'
-						);
-					}
-					return;
-				}
+			// If editing, exclude the current user's record
+			if (current_user) {
+				existingUserQuery = existingUserQuery.neq('id', current_user.id);
 			}
+
+			const { data: existingUser, error: existingUserError } = await existingUserQuery.single();
+
+			if (existingUserError && existingUserError.code !== 'PGRST116') {
+				throw existingUserError;
+			}
+
+			// Show a specific alert if the email or number already exists
+			if (existingUser) {
+				if (existingUser.email === userData.email && current_user.email != userData.email) {
+					showAlertMessage('The email is already taken. Please try a different one.', 'error');
+				} else if (existingUser.mobile_number === userData.mobile_number && current_user.mobile_number != userData.mobile_number) {
+					showAlertMessage(
+						'The mobile number is already taken. Please try a different one.',
+						'error'
+					);
+				}
+				return;
+			}
+		
 
 			let userDataToInsert;
 			if (!current_user) {
