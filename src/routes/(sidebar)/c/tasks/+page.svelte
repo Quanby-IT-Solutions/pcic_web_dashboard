@@ -614,10 +614,7 @@
 								.from('ppir_forms')
 								.select('ppir_insuranceid')
 								.eq('ppir_insuranceid', ppirInsuranceId);
-							if(ppirInsuranceId == '885972'){
-								alert(JSON.stringify(existingRow));
-							}
-						
+							
 							if (selectError && selectError.code !== 'PGRST116') {
 								console.error(
 									`Error checking existence of ${ppirInsuranceId} in ppir_forms:`,
