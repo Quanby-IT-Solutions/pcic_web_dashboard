@@ -609,21 +609,25 @@
 
 						for (const row of parsedData.data as any[]) {
 							const ppirInsuranceId = row['ppir_insuranceid'];
+							
 							const { data: existingRow, error: selectError } = await supabase
 								.from('ppir_forms')
 								.select('ppir_insuranceid')
-								.eq('ppir_insuranceid', ppirInsuranceId)
-								.single();
-
+								.eq('ppir_insuranceid', ppirInsuranceId);
+							if(ppirInsuranceId == '885972'){
+								alert(JSON.stringify(existingRow));
+							}
+						
 							if (selectError && selectError.code !== 'PGRST116') {
 								console.error(
 									`Error checking existence of ${ppirInsuranceId} in ppir_forms:`,
 									selectError
 								);
 								showToast(`Error checking PPIR form: ${ppirInsuranceId}`, 'error');
-							} else if (existingRow) {
+							} else if (existingRow?.length) {
 								scannedFiles[file.name].synced.push(row);
 							} else {
+								
 								scannedFiles[file.name].rows.push(row);
 							}
 						}
