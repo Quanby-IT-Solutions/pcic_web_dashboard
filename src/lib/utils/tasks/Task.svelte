@@ -570,6 +570,3 @@
 	</div>
 </Modal>
 
-{#if selected_task && selected_task.ppir_forms}
-	<p>{handleNullValue(selected_task.ppir_forms.ppir_assignmentid)}</p>
-{/if}
