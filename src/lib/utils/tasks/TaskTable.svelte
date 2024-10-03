@@ -197,8 +197,8 @@
 							</TableBodyCell>
 							<TableBodyCell>
 								<div class="text-sm">
-									<p class="font-medium">{task.users.inspector_name.toUpperCase()}</p>
-									<p class="text-gray-500 dark:text-gray-400">{task.users.email.toLowerCase()}</p>
+									<p class="font-medium">{task.users?.inspector_name.toUpperCase() ?? 'NOT SET'}</p>
+									<p class="text-gray-500 dark:text-gray-400">{task.users?.email.toLowerCase() ?? 'NOT SET'}</p>
 								</div>
 							</TableBodyCell>
 							<TableBodyCell>

@@ -171,7 +171,7 @@
 		filteredTasks = filteredTasks.filter(
 			(task) =>
 				task.task_number.toLowerCase().includes(search.toLowerCase()) ||
-				task.users.inspector_name.toLowerCase().includes(search.toLowerCase()) ||
+				(task.users?.inspector_name.toLowerCase().includes(search.toLowerCase()) ?? true) ||
 				task.service_type.toLowerCase().includes(search.toLowerCase()) ||
 				task.service_group.toLowerCase().includes(search.toLowerCase())
 		);
